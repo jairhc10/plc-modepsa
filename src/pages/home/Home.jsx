@@ -117,7 +117,7 @@ function CollapsibleMenuItem({ icon: Icon, label, children, defaultOpen = false 
 function HomeContent() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const { open, setOpen } = useSidebar(); // ¡IMPORTANTE! Cambié esto
+  const { open, setOpen } = useSidebar();
   const [activeMenu, setActiveMenu] = useState('dashboard');
   const [date, setDate] = useState();
   const [ootFilter, setOotFilter] = useState('all');
@@ -230,7 +230,10 @@ function HomeContent() {
   };
 
   return (
-    <div className="min-h-screen w-full flex"> {/* ¡ESTA ES LA CLAVE! flex en lugar de flex-col */}
+    <div className={cn(
+      "min-h-screen w-full flex",
+      darkMode ? "bg-background text-gray-100" : "bg-background text-foreground"
+    )}>
       <Toaster 
         position="top-center"
         richColors
@@ -243,10 +246,11 @@ function HomeContent() {
         <SidebarHeader>
           <div className="flex items-center gap-3">
             <div className={cn(
-              "flex h-10 w-10 items-center justify-center rounded-lg bg-primary flex-shrink-0",
+              "flex h-10 w-10 items-center justify-center rounded-lg",
+              darkMode ? "bg-blue-600" : "bg-primary",
               sidebarState === "collapsed" && "h-8 w-8 mx-auto"
             )}>
-              <Shield className="h-5 w-5 text-primary-foreground" />
+              <Shield className="h-5 w-5 text-white" />
             </div>
             <div className={cn(
               "flex flex-col transition-all duration-300 overflow-hidden",
@@ -326,7 +330,10 @@ function HomeContent() {
               onClick={handleLogout}
               tooltip="Cerrar sesión"
               className={cn(
-                "text-destructive hover:bg-destructive/10 hover:text-destructive w-full",
+                "w-full",
+                darkMode 
+                  ? "text-red-400 hover:bg-red-400/10 hover:text-red-300" 
+                  : "text-red-600 hover:bg-red-600/10 hover:text-red-700",
                 sidebarState === "collapsed" && "justify-center"
               )}
             >
@@ -337,9 +344,13 @@ function HomeContent() {
         </SidebarFooter>
       </Sidebar>
       
-      {/* Main Content - ¡ESTRUCTURA COPIADA DEL HOME ANTIGUO! */}
       <SidebarInset className="flex-1">
-        <header className="sticky top-0 z-10 border-b bg-background px-6 py-4">
+        <header className={cn(
+          "sticky top-0 z-10 border-b px-6 py-4",
+          darkMode 
+            ? "bg-card/95 border-border backdrop-blur-xl" 
+            : "bg-background border-border"
+        )}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <SidebarTrigger />
@@ -361,12 +372,15 @@ function HomeContent() {
               
               <Button variant="ghost" size="icon" className="relative h-9 w-9">
                 <Bell className="h-5 w-5" />
-                <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-destructive"></span>
+                <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-red-500"></span>
               </Button>
               
               <div className="flex items-center gap-2">
-                <div className="h-9 w-9 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-                  <span className="text-sm font-semibold text-primary-foreground">
+                <div className={cn(
+                  "h-9 w-9 rounded-full flex items-center justify-center flex-shrink-0",
+                  darkMode ? "bg-blue-600" : "bg-primary"
+                )}>
+                  <span className="text-sm font-semibold text-white">
                     {user?.name?.charAt(0) || 'A'}
                   </span>
                 </div>
@@ -380,23 +394,61 @@ function HomeContent() {
         </header>
 
         <main className="p-6 space-y-6 w-full">
-          {/* Estadísticas */}
+          {/* Estadísticas - Colores que cambian con dark mode */}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {[
-              { label: 'Total PLCs', value: '12', icon: Cpu, color: 'bg-primary text-primary-foreground' },
-              { label: 'Registros Hoy', value: '1,245', icon: Database, color: 'bg-green-500 text-green-50 dark:bg-green-600' },
-              { label: 'Alertas Activas', value: '8', icon: AlertCircle, color: 'bg-red-500 text-red-50 dark:bg-red-600' },
-              { label: 'OOT Activas', value: '24', icon: Activity, color: 'bg-purple-500 text-purple-50 dark:bg-purple-600' },
+              { 
+                label: 'Total PLCs', 
+                value: '12', 
+                icon: Cpu, 
+                light: 'bg-blue-500', 
+                dark: 'bg-blue-600',
+                text: 'text-white'
+              },
+              { 
+                label: 'Registros Hoy', 
+                value: '1,245', 
+                icon: Database, 
+                light: 'bg-green-500', 
+                dark: 'bg-green-600',
+                text: 'text-white'
+              },
+              { 
+                label: 'Alertas Activas', 
+                value: '8', 
+                icon: AlertCircle, 
+                light: 'bg-red-500', 
+                dark: 'bg-red-600',
+                text: 'text-white'
+              },
+              { 
+                label: 'OOT Activas', 
+                value: '24', 
+                icon: Activity, 
+                light: 'bg-purple-500', 
+                dark: 'bg-purple-600',
+                text: 'text-white'
+              },
             ].map((stat, index) => {
               const Icon = stat.icon;
               return (
-                <div key={index} className="rounded-lg border bg-card p-6">
+                <div key={index} className={cn(
+                  "rounded-lg border p-6",
+                  darkMode ? "bg-card border-border" : "bg-card"
+                )}>
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground">{stat.label}</p>
+                      <p className={cn(
+                        "text-sm font-medium",
+                        darkMode ? "text-muted-foreground" : "text-muted-foreground"
+                      )}>{stat.label}</p>
                       <p className="text-2xl font-bold">{stat.value}</p>
                     </div>
-                    <div className={cn("rounded-lg p-3", stat.color)}>
+                    <div className={cn(
+                      "rounded-lg p-3",
+                      darkMode ? stat.dark : stat.light,
+                      stat.text
+                    )}>
                       <Icon className="h-6 w-6" />
                     </div>
                   </div>
@@ -406,22 +458,39 @@ function HomeContent() {
           </div>
           
           {/* Filtros */}
-          <div className="rounded-lg border bg-card p-6">
+          <div className={cn(
+            "rounded-lg border p-6",
+            darkMode ? "bg-card border-border" : "bg-card"
+          )}>
             <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-center gap-2">
-                <Filter className="h-5 w-5 text-primary" />
+                <Filter className={cn(
+                  "h-5 w-5",
+                  darkMode ? "text-blue-400" : "text-primary"
+                )} />
                 <h2 className="text-lg font-semibold">Filtros de Búsqueda</h2>
               </div>
-              <Button variant="ghost" size="sm" onClick={clearFilters} className="self-start sm:self-center">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={clearFilters} 
+                className="self-start sm:self-center"
+              >
                 Limpiar Todo
               </Button>
             </div>
             
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Buscar</label>
+                <label className={cn(
+                  "text-sm font-medium",
+                  darkMode ? "text-foreground" : ""
+                )}>Buscar</label>
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Search className={cn(
+                    "absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2",
+                    darkMode ? "text-muted-foreground" : "text-muted-foreground"
+                  )} />
                   <Input
                     placeholder="ID, Variable, OOT..."
                     className="pl-9 w-full"
@@ -432,32 +501,50 @@ function HomeContent() {
               </div>
               
               <div className="space-y-2">
-                <label className="text-sm font-medium">Fecha</label>
+                <label className={cn(
+                  "text-sm font-medium",
+                  darkMode ? "text-foreground" : ""
+                )}>Fecha</label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"
-                      className="w-full justify-start text-left font-normal"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        darkMode && "border-border bg-background text-foreground hover:bg-accent"
+                      )}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
                       {date ? format(date, 'PPP', { locale: es }) : 'Seleccionar fecha'}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
+                  <PopoverContent className={cn(
+                    "w-auto p-0",
+                    darkMode ? "bg-card border-border" : ""
+                  )} align="start">
                     <Calendar
                       mode="single"
                       selected={date}
                       onSelect={setDate}
                       initialFocus
+                      className={darkMode ? "bg-card" : ""}
                     />
                   </PopoverContent>
                 </Popover>
               </div>
               
               <div className="space-y-2">
-                <label className="text-sm font-medium">OOT</label>
+                <label className={cn(
+                  "text-sm font-medium",
+                  darkMode ? "text-foreground" : ""
+                )}>OOT</label>
                 <select
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  className={cn(
+                    "flex h-10 w-full rounded-md border px-3 py-2 text-sm",
+                    darkMode 
+                      ? "border-border bg-background text-foreground focus:ring-ring" 
+                      : "border-input bg-background"
+                  )}
                   value={ootFilter}
                   onChange={(e) => setOotFilter(e.target.value)}
                 >
@@ -469,9 +556,17 @@ function HomeContent() {
               </div>
               
               <div className="space-y-2">
-                <label className="text-sm font-medium">PLC</label>
+                <label className={cn(
+                  "text-sm font-medium",
+                  darkMode ? "text-foreground" : ""
+                )}>PLC</label>
                 <select
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  className={cn(
+                    "flex h-10 w-full rounded-md border px-3 py-2 text-sm",
+                    darkMode 
+                      ? "border-border bg-background text-foreground focus:ring-ring" 
+                      : "border-input bg-background"
+                  )}
                   value={plcFilter}
                   onChange={(e) => setPlcFilter(e.target.value)}
                 >
@@ -484,11 +579,20 @@ function HomeContent() {
             </div>
             
             <div className="mt-6 flex flex-wrap gap-2">
-              <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
+              <Button className={cn(
+                "text-white",
+                darkMode 
+                  ? "bg-blue-600 hover:bg-blue-700" 
+                  : "bg-primary hover:bg-primary/90"
+              )}>
                 <Search className="mr-2 h-4 w-4" />
                 Buscar
               </Button>
-              <Button variant="outline" onClick={() => setDate(new Date())}>
+              <Button 
+                variant="outline" 
+                onClick={() => setDate(new Date())}
+                className={darkMode ? "border-border hover:bg-accent" : ""}
+              >
                 <CalendarIcon className="mr-2 h-4 w-4" />
                 Hoy
               </Button>
@@ -496,11 +600,20 @@ function HomeContent() {
           </div>
           
           {/* Tabla */}
-          <div className="rounded-lg border bg-card overflow-hidden">
-            <div className="flex flex-col items-start justify-between gap-4 border-b p-4 sm:p-6 sm:flex-row sm:items-center">
+          <div className={cn(
+            "rounded-lg border overflow-hidden",
+            darkMode ? "bg-card border-border" : "bg-card"
+          )}>
+            <div className={cn(
+              "flex flex-col items-start justify-between gap-4 border-b p-4 sm:p-6 sm:flex-row sm:items-center",
+              darkMode ? "border-border" : ""
+            )}>
               <div>
                 <h3 className="text-lg font-semibold">Registros PLC</h3>
-                <p className="text-sm text-muted-foreground">
+                <p className={cn(
+                  "text-sm",
+                  darkMode ? "text-muted-foreground" : "text-muted-foreground"
+                )}>
                   {filteredRegistros.length} registros encontrados
                 </p>
               </div>
@@ -508,6 +621,7 @@ function HomeContent() {
                 variant="outline" 
                 size="sm"
                 onClick={handleExportCSV}
+                className={darkMode ? "border-border hover:bg-accent" : ""}
               >
                 <Download className="mr-2 h-4 w-4" />
                 Exportar CSV
@@ -517,47 +631,92 @@ function HomeContent() {
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead className="whitespace-nowrap">ID Registro</TableHead>
-                    <TableHead className="whitespace-nowrap">Fecha y Hora</TableHead>
-                    <TableHead className="whitespace-nowrap">PLC</TableHead>
-                    <TableHead className="whitespace-nowrap">OOT</TableHead>
-                    <TableHead className="whitespace-nowrap">Variable</TableHead>
-                    <TableHead className="whitespace-nowrap">Valor</TableHead>
-                    <TableHead className="whitespace-nowrap">Estado</TableHead>
-                    <TableHead className="whitespace-nowrap">Acciones</TableHead>
+                  <TableRow className={darkMode ? "hover:bg-accent/50" : ""}>
+                    <TableHead className={cn(
+                      "whitespace-nowrap",
+                      darkMode ? "text-foreground" : ""
+                    )}>ID Registro</TableHead>
+                    <TableHead className={cn(
+                      "whitespace-nowrap",
+                      darkMode ? "text-foreground" : ""
+                    )}>Fecha y Hora</TableHead>
+                    <TableHead className={cn(
+                      "whitespace-nowrap",
+                      darkMode ? "text-foreground" : ""
+                    )}>PLC</TableHead>
+                    <TableHead className={cn(
+                      "whitespace-nowrap",
+                      darkMode ? "text-foreground" : ""
+                    )}>OOT</TableHead>
+                    <TableHead className={cn(
+                      "whitespace-nowrap",
+                      darkMode ? "text-foreground" : ""
+                    )}>Variable</TableHead>
+                    <TableHead className={cn(
+                      "whitespace-nowrap",
+                      darkMode ? "text-foreground" : ""
+                    )}>Valor</TableHead>
+                    <TableHead className={cn(
+                      "whitespace-nowrap",
+                      darkMode ? "text-foreground" : ""
+                    )}>Estado</TableHead>
+                    <TableHead className={cn(
+                      "whitespace-nowrap",
+                      darkMode ? "text-foreground" : ""
+                    )}>Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredRegistros.map((registro) => (
-                    <TableRow key={registro.id} className="hover:bg-muted/50">
+                    <TableRow key={registro.id} className={darkMode ? "hover:bg-accent/30" : "hover:bg-muted/50"}>
                       <TableCell className="font-medium whitespace-nowrap">
                         <div className="flex items-center gap-2">
-                          <div className="rounded-md bg-primary/10 p-1 dark:bg-primary/20 shrink-0">
-                            <Cpu className="h-4 w-4 text-primary" />
+                          <div className={cn(
+                            "rounded-md p-1 shrink-0",
+                            darkMode ? "bg-blue-500/20" : "bg-primary/10"
+                          )}>
+                            <Cpu className={cn(
+                              "h-4 w-4",
+                              darkMode ? "text-blue-400" : "text-primary"
+                            )} />
                           </div>
                           {registro.id}
                         </div>
                       </TableCell>
-                      <TableCell className="whitespace-nowrap">{registro.fecha}</TableCell>
+                      <TableCell className={darkMode ? "text-foreground" : ""}>{registro.fecha}</TableCell>
                       <TableCell className="whitespace-nowrap">
-                        <span className="inline-flex items-center rounded-full bg-primary/10 dark:bg-primary/20 px-2 py-1 text-xs font-medium text-primary whitespace-nowrap">
+                        <span className={cn(
+                          "inline-flex items-center rounded-full px-2 py-1 text-xs font-medium whitespace-nowrap",
+                          darkMode 
+                            ? "bg-blue-500/20 text-blue-300" 
+                            : "bg-primary/10 text-primary"
+                        )}>
                           {registro.plc}
                         </span>
                       </TableCell>
-                      <TableCell className="whitespace-nowrap">{registro.oot}</TableCell>
+                      <TableCell className={darkMode ? "text-foreground" : ""}>{registro.oot}</TableCell>
                       <TableCell className="whitespace-nowrap">
-                        <code className="rounded bg-muted px-2 py-1 text-xs whitespace-nowrap">
+                        <code className={cn(
+                          "rounded px-2 py-1 text-xs whitespace-nowrap",
+                          darkMode ? "bg-accent text-foreground" : "bg-muted"
+                        )}>
                           {registro.variable}
                         </code>
                       </TableCell>
-                      <TableCell className="font-semibold whitespace-nowrap">{registro.valor}</TableCell>
+                      <TableCell className={cn(
+                        "font-semibold whitespace-nowrap",
+                        darkMode ? "text-foreground" : ""
+                      )}>{registro.valor}</TableCell>
                       <TableCell className="whitespace-nowrap">
                         <span className={cn(
                           "inline-flex items-center rounded-full px-2 py-1 text-xs font-medium whitespace-nowrap",
                           registro.estado === 'Finalizado' 
-                            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
-                            : 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200'
+                            ? darkMode 
+                              ? 'bg-green-500/20 text-green-300' 
+                              : 'bg-green-100 text-green-800'
+                            : darkMode 
+                              ? 'bg-orange-500/20 text-orange-300' 
+                              : 'bg-orange-100 text-orange-800'
                         )}>
                           {registro.estado}
                         </span>
@@ -580,26 +739,39 @@ function HomeContent() {
           </div>
           
           {/* Paginación */}
-          <div className="rounded-lg border bg-card p-4">
+          <div className={cn(
+            "rounded-lg border p-4",
+            darkMode ? "bg-card border-border" : "bg-card"
+          )}>
             <Pagination>
               <PaginationContent>
                 <PaginationItem>
-                  <PaginationPrevious href="#" />
+                  <PaginationPrevious href="#" className={darkMode ? "hover:bg-accent" : ""} />
                 </PaginationItem>
                 <PaginationItem>
-                  <PaginationLink href="#" isActive>1</PaginationLink>
+                  <PaginationLink 
+                    href="#" 
+                    isActive 
+                    className={cn(
+                      darkMode 
+                        ? "bg-blue-600 hover:bg-blue-700 text-white" 
+                        : ""
+                    )}
+                  >
+                    1
+                  </PaginationLink>
                 </PaginationItem>
                 <PaginationItem>
-                  <PaginationLink href="#">2</PaginationLink>
+                  <PaginationLink href="#" className={darkMode ? "hover:bg-accent" : ""}>2</PaginationLink>
                 </PaginationItem>
                 <PaginationItem>
-                  <PaginationLink href="#">3</PaginationLink>
+                  <PaginationLink href="#" className={darkMode ? "hover:bg-accent" : ""}>3</PaginationLink>
                 </PaginationItem>
                 <PaginationItem>
-                  <PaginationEllipsis />
+                  <PaginationEllipsis className={darkMode ? "text-muted-foreground" : ""} />
                 </PaginationItem>
                 <PaginationItem>
-                  <PaginationNext href="#" />
+                  <PaginationNext href="#" className={darkMode ? "hover:bg-accent" : ""} />
                 </PaginationItem>
               </PaginationContent>
             </Pagination>
