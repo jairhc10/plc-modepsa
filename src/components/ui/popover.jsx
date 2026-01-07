@@ -1,5 +1,5 @@
 import * as React from "react"
-import { cn } from "@/lib/utils"
+import { cn } from "../../lib/utils"
 
 const PopoverContext = React.createContext(null)
 
@@ -70,24 +70,35 @@ const PopoverContent = React.forwardRef(({
   className, 
   align = "center", 
   children, 
+  sideOffset = 8,
   ...props 
 }, ref) => {
   const { open, setOpen } = usePopover()
+  const contentRef = React.useRef(null)
 
   React.useEffect(() => {
     const handleClickOutside = (event) => {
-      if (!event.target.closest('.popover-content') && 
+      if (contentRef.current && 
+          !contentRef.current.contains(event.target) &&
           !event.target.closest('.popover-trigger')) {
+        setOpen(false)
+      }
+    }
+
+    const handleEscape = (event) => {
+      if (event.key === 'Escape') {
         setOpen(false)
       }
     }
 
     if (open) {
       document.addEventListener('mousedown', handleClickOutside)
+      document.addEventListener('keydown', handleEscape)
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('keydown', handleEscape)
     }
   }, [open, setOpen])
 
@@ -101,17 +112,24 @@ const PopoverContent = React.forwardRef(({
 
   return (
     <div
-      ref={ref}
+      ref={(node) => {
+        contentRef.current = node
+        if (typeof ref === 'function') ref(node)
+        else if (ref) ref.current = node
+      }}
       className={cn(
-        "popover-content absolute z-50 mt-2 w-72 rounded-md border bg-popover text-popover-foreground p-0 shadow-lg outline-none animate-in fade-in-80",
+        "popover-content absolute z-50 w-auto rounded-lg border shadow-lg outline-none animate-in fade-in-0 zoom-in-95",
+        // Colores que se adaptan automáticamente al theme
+        "bg-card text-card-foreground border-border",
+        // Dark mode específico
+        "dark:bg-card dark:text-card-foreground dark:border-border",
         positionClasses[align],
         className
       )}
+      style={{ marginTop: `${sideOffset}px` }}
       {...props}
     >
-      <div className="p-4">
-        {children}
-      </div>
+      {children}
     </div>
   )
 })
