@@ -5,7 +5,6 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import {
   Home as HomeIcon,
-  FileText,
   Settings,
   LogOut,
   Search,
@@ -19,21 +18,16 @@ import {
   ChevronDown,
   ChevronRight,
   Folder,
-  File,
   Database,
   Cpu,
   Activity,
   AlertCircle,
-  CheckCircle,
   Clock,
   User,
   Shield,
   BarChart3,
   Layers,
-  Server,
   FileBarChart,
-  TrendingUp,
-  Workflow
 } from 'lucide-react';
 import {
   SidebarProvider,
@@ -208,11 +202,9 @@ function HomeContent() {
     if (newDarkMode) {
       document.documentElement.classList.add('dark');
       localStorage.setItem('theme', 'dark');
-      toast.info('Modo oscuro activado');
     } else {
       document.documentElement.classList.remove('dark');
       localStorage.setItem('theme', 'light');
-      toast.info('Modo claro activado');
     }
   };
 
@@ -238,12 +230,18 @@ function HomeContent() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <Toaster />
+      {/* Toaster DENTRO del Home */}
+      <Toaster 
+        position="top-center"
+        richColors
+        closeButton
+        expand={false}
+        className="z-[9999]"
+      />
       
       <SidebarProvider defaultOpen={true}>
         <Sidebar collapsible="icon">
-          {/* Header bien contenido */}
-          <SidebarHeader className="border-b border-sidebar-border">
+          <SidebarHeader>
             <div className="flex items-center gap-3">
               <div className={cn(
                 "flex h-10 w-10 items-center justify-center rounded-lg bg-primary flex-shrink-0",
@@ -261,69 +259,57 @@ function HomeContent() {
             </div>
           </SidebarHeader>
           
-          <SidebarContent className="flex-1">
-            <div className="p-2">
-              {/* Barra de búsqueda - SE OCULTA COMPLETAMENTE cuando colapsado */}
-              <div className={cn(
-                "mb-3 transition-all duration-300",
-                sidebarState === "collapsed" ? "h-0 opacity-0 overflow-hidden mb-0" : "h-auto opacity-100"
-              )}>
-                
-              </div>
-              
-              <SidebarMenu>
-                {menuItems.map((item) => {
-                  if (item.type === 'group') {
-                    const GroupIcon = item.icon;
-                    return (
-                      <SidebarMenuItem key={item.id}>
-                        <CollapsibleMenuItem 
-                          icon={GroupIcon} 
-                          label={item.label}
-                          defaultOpen={item.id === 'active-file'}
-                        >
-                          {item.items.map((subItem) => {
-                            const SubIcon = subItem.icon;
-                            return (
-                              <SidebarMenuButton
-                                key={subItem.id}
-                                isActive={activeMenu === subItem.id}
-                                onClick={() => setActiveMenu(subItem.id)}
-                                tooltip={subItem.label}
-                                className="pl-2"
-                              >
-                                <SubIcon className="h-4 w-4 flex-shrink-0" />
-                                {subItem.label}
-                              </SidebarMenuButton>
-                            );
-                          })}
-                        </CollapsibleMenuItem>
-                      </SidebarMenuItem>
-                    );
-                  }
-                  
-                  const Icon = item.icon;
+          <SidebarContent>
+            <SidebarMenu>
+              {menuItems.map((item) => {
+                if (item.type === 'group') {
+                  const GroupIcon = item.icon;
                   return (
                     <SidebarMenuItem key={item.id}>
-                      <SidebarMenuButton
-                        isActive={activeMenu === item.id}
-                        onClick={() => setActiveMenu(item.id)}
-                        tooltip={item.label}
+                      <CollapsibleMenuItem 
+                        icon={GroupIcon} 
+                        label={item.label}
+                        defaultOpen={item.id === 'active-file'}
                       >
-                        <Icon className="h-4 w-4 flex-shrink-0" />
-                        {item.label}
-                      </SidebarMenuButton>
+                        {item.items.map((subItem) => {
+                          const SubIcon = subItem.icon;
+                          return (
+                            <SidebarMenuButton
+                              key={subItem.id}
+                              isActive={activeMenu === subItem.id}
+                              onClick={() => setActiveMenu(subItem.id)}
+                              tooltip={subItem.label}
+                              className="pl-2"
+                            >
+                              <SubIcon className="h-4 w-4 flex-shrink-0" />
+                              {subItem.label}
+                            </SidebarMenuButton>
+                          );
+                        })}
+                      </CollapsibleMenuItem>
                     </SidebarMenuItem>
                   );
-                })}
-              </SidebarMenu>
-            </div>
+                }
+                
+                const Icon = item.icon;
+                return (
+                  <SidebarMenuItem key={item.id}>
+                    <SidebarMenuButton
+                      isActive={activeMenu === item.id}
+                      onClick={() => setActiveMenu(item.id)}
+                      tooltip={item.label}
+                    >
+                      <Icon className="h-4 w-4 flex-shrink-0" />
+                      {item.label}
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
           </SidebarContent>
           
-          {/* Footer bien contenido */}
-          <SidebarFooter className="border-t border-sidebar-border p-3">
+          <SidebarFooter>
             <div className="space-y-3">
-              {/* Usuario - Bien contenido */}
               <div className="flex items-center gap-2">
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted flex-shrink-0">
                   <User className="h-4 w-4" />
@@ -337,7 +323,6 @@ function HomeContent() {
                 </div>
               </div>
               
-              {/* Logout */}
               <SidebarMenuButton
                 onClick={handleLogout}
                 tooltip="Cerrar sesión"
@@ -392,25 +377,25 @@ function HomeContent() {
             </div>
           </header>
           
-          <main className="flex-1 space-y-6 p-6 w-full">
+          <main className="flex-1 space-y-6 p-6 w-full max-w-full">
             {/* Estadísticas */}
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {[
-                { label: 'Total PLCs', value: '12', icon: Cpu, color: 'bg-primary' },
-                { label: 'Registros Hoy', value: '1,245', icon: Database, color: 'bg-green-500 dark:bg-green-600' },
-                { label: 'Alertas Activas', value: '8', icon: AlertCircle, color: 'bg-red-500 dark:bg-red-600' },
-                { label: 'OOT Activas', value: '24', icon: Activity, color: 'bg-purple-500 dark:bg-purple-600' },
+                { label: 'Total PLCs', value: '12', icon: Cpu, color: 'bg-primary text-primary-foreground' },
+                { label: 'Registros Hoy', value: '1,245', icon: Database, color: 'bg-green-500 text-green-50 dark:bg-green-600' },
+                { label: 'Alertas Activas', value: '8', icon: AlertCircle, color: 'bg-red-500 text-red-50 dark:bg-red-600' },
+                { label: 'OOT Activas', value: '24', icon: Activity, color: 'bg-purple-500 text-purple-50 dark:bg-purple-600' },
               ].map((stat, index) => {
                 const Icon = stat.icon;
                 return (
-                  <div key={index} className="rounded-lg border bg-card p-6 transition-colors duration-200">
+                  <div key={index} className="rounded-lg border bg-card p-6">
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm font-medium text-muted-foreground">{stat.label}</p>
                         <p className="text-2xl font-bold">{stat.value}</p>
                       </div>
-                      <div className={`${stat.color} rounded-lg p-3 transition-colors duration-200`}>
-                        <Icon className="h-6 w-6 text-white" />
+                      <div className={cn("rounded-lg p-3", stat.color)}>
+                        <Icon className="h-6 w-6" />
                       </div>
                     </div>
                   </div>
@@ -419,7 +404,7 @@ function HomeContent() {
             </div>
             
             {/* Filtros */}
-            <div className="rounded-lg border bg-card p-6 transition-colors duration-200">
+            <div className="rounded-lg border bg-card p-6">
               <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-2">
                   <Filter className="h-5 w-5 text-primary" />
@@ -450,19 +435,18 @@ function HomeContent() {
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
-                        className="w-full justify-start text-left font-normal border-input hover:bg-accent hover:text-accent-foreground"
+                        className="w-full justify-start text-left font-normal"
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
                         {date ? format(date, 'PPP', { locale: es }) : 'Seleccionar fecha'}
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0 bg-popover text-popover-foreground border" align="start">
+                    <PopoverContent className="w-auto p-0" align="start">
                       <Calendar
                         mode="single"
                         selected={date}
                         onSelect={setDate}
                         initialFocus
-                        className="rounded-md border"
                       />
                     </PopoverContent>
                   </Popover>
@@ -471,7 +455,7 @@ function HomeContent() {
                 <div className="space-y-2">
                   <label className="text-sm font-medium">OOT</label>
                   <select
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors duration-200"
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                     value={ootFilter}
                     onChange={(e) => setOotFilter(e.target.value)}
                   >
@@ -485,7 +469,7 @@ function HomeContent() {
                 <div className="space-y-2">
                   <label className="text-sm font-medium">PLC</label>
                   <select
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors duration-200"
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                     value={plcFilter}
                     onChange={(e) => setPlcFilter(e.target.value)}
                   >
@@ -498,11 +482,11 @@ function HomeContent() {
               </div>
               
               <div className="mt-6 flex flex-wrap gap-2">
-                <Button className="bg-primary text-primary-foreground hover:bg-primary/90 flex-1 sm:flex-none transition-colors duration-200">
+                <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
                   <Search className="mr-2 h-4 w-4" />
                   Buscar
                 </Button>
-                <Button variant="outline" onClick={() => setDate(new Date())} className="flex-1 sm:flex-none transition-colors duration-200">
+                <Button variant="outline" onClick={() => setDate(new Date())}>
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   Hoy
                 </Button>
@@ -510,7 +494,7 @@ function HomeContent() {
             </div>
             
             {/* Tabla */}
-            <div className="rounded-lg border bg-card transition-colors duration-200 overflow-hidden">
+            <div className="rounded-lg border bg-card overflow-hidden">
               <div className="flex flex-col items-start justify-between gap-4 border-b p-4 sm:p-6 sm:flex-row sm:items-center">
                 <div>
                   <h3 className="text-lg font-semibold">Registros PLC</h3>
@@ -522,7 +506,6 @@ function HomeContent() {
                   variant="outline" 
                   size="sm"
                   onClick={handleExportCSV}
-                  className="self-start sm:self-center transition-colors duration-200"
                 >
                   <Download className="mr-2 h-4 w-4" />
                   Exportar CSV
@@ -530,73 +513,72 @@ function HomeContent() {
               </div>
               
               <div className="overflow-x-auto">
-                <div className="min-w-full">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="whitespace-nowrap">ID Registro</TableHead>
-                        <TableHead className="whitespace-nowrap">Fecha y Hora</TableHead>
-                        <TableHead className="whitespace-nowrap">PLC</TableHead>
-                        <TableHead className="whitespace-nowrap">OOT</TableHead>
-                        <TableHead className="whitespace-nowrap">Variable</TableHead>
-                        <TableHead className="whitespace-nowrap">Valor</TableHead>
-                        <TableHead className="whitespace-nowrap">Estado</TableHead>
-                        <TableHead className="whitespace-nowrap">Acciones</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredRegistros.map((registro) => (
-                        <TableRow key={registro.id} className="hover:bg-muted/50 transition-colors duration-200">
-                          <TableCell className="font-medium whitespace-nowrap">
-                            <div className="flex items-center gap-2">
-                              <div className="rounded-md bg-primary/10 p-1 dark:bg-primary/20 shrink-0">
-                                <Cpu className="h-4 w-4 text-primary" />
-                              </div>
-                              {registro.id}
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="whitespace-nowrap">ID Registro</TableHead>
+                      <TableHead className="whitespace-nowrap">Fecha y Hora</TableHead>
+                      <TableHead className="whitespace-nowrap">PLC</TableHead>
+                      <TableHead className="whitespace-nowrap">OOT</TableHead>
+                      <TableHead className="whitespace-nowrap">Variable</TableHead>
+                      <TableHead className="whitespace-nowrap">Valor</TableHead>
+                      <TableHead className="whitespace-nowrap">Estado</TableHead>
+                      <TableHead className="whitespace-nowrap">Acciones</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredRegistros.map((registro) => (
+                      <TableRow key={registro.id} className="hover:bg-muted/50">
+                        <TableCell className="font-medium whitespace-nowrap">
+                          <div className="flex items-center gap-2">
+                            <div className="rounded-md bg-primary/10 p-1 dark:bg-primary/20 shrink-0">
+                              <Cpu className="h-4 w-4 text-primary" />
                             </div>
-                          </TableCell>
-                          <TableCell className="whitespace-nowrap">{registro.fecha}</TableCell>
-                          <TableCell className="whitespace-nowrap">
-                            <span className="inline-flex items-center rounded-full bg-primary/10 dark:bg-primary/20 px-3 py-1 text-xs font-medium text-primary whitespace-nowrap">
-                              {registro.plc}
-                            </span>
-                          </TableCell>
-                          <TableCell className="whitespace-nowrap">{registro.oot}</TableCell>
-                          <TableCell className="whitespace-nowrap">
-                            <code className="rounded bg-muted px-2 py-1 text-xs whitespace-nowrap">
-                              {registro.variable}
-                            </code>
-                          </TableCell>
-                          <TableCell className="font-semibold whitespace-nowrap">{registro.valor}</TableCell>
-                          <TableCell className="whitespace-nowrap">
-                            <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap transition-colors duration-200 ${
-                              registro.estado === 'Finalizado' 
-                                ? 'bg-green-500 dark:bg-green-600 text-white' 
-                                : 'bg-orange-500 dark:bg-orange-600 text-white'
-                            }`}>
-                              {registro.estado}
-                            </span>
-                          </TableCell>
-                          <TableCell className="whitespace-nowrap">
-                            <Button 
-                              variant="ghost" 
-                              size="icon"
-                              onClick={() => handleViewDetails(registro.id)}
-                              className="h-8 w-8 transition-colors duration-200"
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
+                            {registro.id}
+                          </div>
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap">{registro.fecha}</TableCell>
+                        <TableCell className="whitespace-nowrap">
+                          <span className="inline-flex items-center rounded-full bg-primary/10 dark:bg-primary/20 px-2 py-1 text-xs font-medium text-primary whitespace-nowrap">
+                            {registro.plc}
+                          </span>
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap">{registro.oot}</TableCell>
+                        <TableCell className="whitespace-nowrap">
+                          <code className="rounded bg-muted px-2 py-1 text-xs whitespace-nowrap">
+                            {registro.variable}
+                          </code>
+                        </TableCell>
+                        <TableCell className="font-semibold whitespace-nowrap">{registro.valor}</TableCell>
+                        <TableCell className="whitespace-nowrap">
+                          <span className={cn(
+                            "inline-flex items-center rounded-full px-2 py-1 text-xs font-medium whitespace-nowrap",
+                            registro.estado === 'Finalizado' 
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
+                              : 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200'
+                          )}>
+                            {registro.estado}
+                          </span>
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap">
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            onClick={() => handleViewDetails(registro.id)}
+                            className="h-8 w-8"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
             </div>
             
             {/* Paginación */}
-            <div className="rounded-lg border bg-card p-4 transition-colors duration-200">
+            <div className="rounded-lg border bg-card p-4">
               <Pagination>
                 <PaginationContent>
                   <PaginationItem>
@@ -622,7 +604,7 @@ function HomeContent() {
             </div>
           </main>
           
-          <footer className="border-t py-4 px-6 transition-colors duration-200">
+          <footer className="border-t py-4 px-6">
             <p className="text-sm text-muted-foreground text-center">
               © 2024 PLC MODEPSA Control System
             </p>
