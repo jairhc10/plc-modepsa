@@ -10,6 +10,7 @@ import { Toaster, toast } from '../../components/ui/sonner';
 import { Input } from '../../components/ui/input';
 import { cn } from '@/lib/utils'; 
 import DateRangeCalendar from '@/components/ui/calendar';
+import { reportesService } from '../../services/reportesService';
 
 // =========================================================================
 // 1. COMPONENTE INTERNO: AQUÍ VA TODA TU LÓGICA, ESTADOS Y VISTAS
@@ -53,6 +54,11 @@ function DashboardInternal() {
   const handleRightYearChange = (newYear) => { const newDate = new Date(rightDate); newDate.setFullYear(newYear); setRightDate(newDate); };
   const prevMonthRight = () => handleRightMonthChange(rightDate.getMonth() - 1);
   const nextMonthRight = () => handleRightMonthChange(rightDate.getMonth() + 1);
+
+
+  const [reporteHornos, setReporteHornos] = useState([]);
+  const [loadingReporte, setLoadingReporte] = useState(false);
+  const [errorReporte, setErrorReporte] = useState(null);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -140,6 +146,40 @@ function DashboardInternal() {
   const handleExportCSV = () => toast.success('Exportando datos a CSV...');
   const handleViewDetails = (id) => toast.info(`Viendo detalles del registro ${id}`);
 
+  // Función para obtener reporte de hornos
+const obtenerReporteHornos = async () => {
+  setLoadingReporte(true);
+  setErrorReporte(null);
+  
+  try {
+    const filtros = {
+      fecha_desde: dateRange.from ? dateRange.from.toISOString().split('T')[0] : null,
+      fecha_hasta: dateRange.to ? dateRange.to.toISOString().split('T')[0] : null,
+      numero_ot: ootFilter !== 'all' ? ootFilter : null,
+    };
+    
+    console.log('Enviando filtros:', filtros); // Para debug
+    
+    const resultado = await reportesService.obtenerReporteHornos(filtros);
+    
+    console.log('Resultado recibido:', resultado); // Para debug
+    
+    if (resultado.success) {
+      setReporteHornos(resultado.data || []);
+      toast.success(`Se encontraron ${resultado.total} registros`);
+    } else {
+      setErrorReporte(resultado.error || 'Error al obtener datos');
+      toast.error('Error al cargar el reporte');
+    }
+  } catch (error) {
+    console.error('Error completo:', error); // Para debug
+    setErrorReporte(error.message || 'Error desconocido');
+    toast.error('Error de conexión con el servidor');
+  } finally {
+    setLoadingReporte(false);
+  }
+};
+
   // --- VISTA REPORTES (Contenido completo) ---
   const renderReportsView = () => (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -175,7 +215,25 @@ function DashboardInternal() {
       <Filter className={cn("h-5 w-5", darkMode ? "text-blue-400" : "text-primary")} />
       <h2 className="text-lg font-semibold">Filtros de Búsqueda</h2>
     </div>
-    <Button variant="ghost" size="sm" onClick={clearFilters} className="self-start sm:self-center">Limpiar Todo</Button>
+    <div className="flex gap-2">
+  <Button 
+    onClick={obtenerReporteHornos}
+    disabled={loadingReporte}
+    className="bg-blue-600 hover:bg-blue-700 text-white"
+    size="sm"
+  >
+    {loadingReporte ? 'Consultando...' : 'Buscar Datos'}
+  </Button>
+  <Button 
+    variant="ghost" 
+    size="sm" 
+    onClick={clearFilters} 
+    className="self-start sm:self-center"
+  >
+    Limpiar Todo
+  </Button>
+</div>
+    {/* <Button variant="ghost" size="sm" onClick={clearFilters} className="self-start sm:self-center">Limpiar Todo</Button> */}
   </div>
         
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -244,65 +302,201 @@ function DashboardInternal() {
       </div>
 
       {/* Tabla */}
-      <div className={cn("rounded-lg border shadow-sm", darkMode ? "bg-card border-border" : "bg-card")}>
-        <div className="p-6 border-b border-border">
-          <h3 className="text-lg font-semibold">Registros Recientes</h3>
-          <p className="text-sm text-muted-foreground">Mostrando últimos movimientos del sistema</p>
-        </div>
-        <Table>
-          <TableHeader>
-            <TableRow className={darkMode ? "border-gray-800 hover:bg-gray-800/50" : ""}>
-              <TableHead className="w-[100px]">ID Registro</TableHead>
-              <TableHead>Fecha Hora</TableHead>
-              <TableHead>PLC</TableHead>
-              <TableHead>OOT</TableHead>
-              <TableHead>Variable</TableHead>
-              <TableHead>Valor</TableHead>
-              <TableHead>Estado</TableHead>
-              <TableHead className="text-right">Acciones</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredRegistros.map((registro) => (
-              <TableRow key={registro.id} className={darkMode ? "border-gray-800 hover:bg-gray-800/50" : ""}>
-                <TableCell className="font-medium">{registro.id}</TableCell>
-                <TableCell>{registro.fecha}</TableCell>
-                <TableCell><span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">{registro.plc}</span></TableCell>
-                <TableCell>{registro.oot}</TableCell>
-                <TableCell>{registro.variable}</TableCell>
-                <TableCell>{registro.valor}</TableCell>
-                <TableCell>
-                  <span className={cn("inline-flex items-center rounded-full px-2 py-1 text-xs font-medium", registro.estado === 'Finalizado' ? "bg-green-50 text-green-700 ring-1 ring-inset ring-green-600/20" : "bg-yellow-50 text-yellow-800 ring-1 ring-inset ring-yellow-600/20")}>
-                    {registro.estado}
-                  </span>
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-2">
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50" onClick={() => handleViewDetails(registro.id)}><Eye className="h-4 w-4" /></Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50" onClick={handleExportCSV}><Download className="h-4 w-4" /></Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-        
-        {/* Paginación */}
-        <div className="p-4 border-t border-border flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Mostrando 5 de 42 resultados</span>
-            <Pagination>
-                <PaginationContent>
-                    <PaginationItem><PaginationPrevious href="#" className={darkMode ? "hover:bg-gray-800" : ""} /></PaginationItem>
-                    <PaginationItem><PaginationLink href="#" isActive>1</PaginationLink></PaginationItem>
-                    <PaginationItem><PaginationLink href="#" className={darkMode ? "hover:bg-gray-800" : ""}>2</PaginationLink></PaginationItem>
-                    <PaginationItem><PaginationLink href="#" className={darkMode ? "hover:bg-gray-800" : ""}>3</PaginationLink></PaginationItem>
-                    <PaginationItem><PaginationEllipsis /></PaginationItem>
-                    <PaginationItem><PaginationNext href="#" className={darkMode ? "hover:bg-gray-800" : ""} /></PaginationItem>
-                </PaginationContent>
-            </Pagination>
-        </div>
-      </div>
+      {/* Tabla */}
+<div className={cn("rounded-lg border shadow-sm", darkMode ? "bg-card border-border" : "bg-card")}>
+  <div className="p-6 border-b border-border">
+    <h3 className="text-lg font-semibold">Registros Recientes</h3>
+    <p className="text-sm text-muted-foreground">Mostrando últimos movimientos del sistema</p>
+  </div>
+
+  {/* Mensaje de sin datos */}
+  {!loadingReporte && reporteHornos.length === 0 && (
+    <div className="p-12 text-center">
+      <Database className="h-12 w-12 mx-auto text-muted-foreground opacity-20 mb-4" />
+      <p className="text-muted-foreground">
+        No hay datos para mostrar. Haz clic en <strong>"Buscar Datos"</strong> para cargar el reporte.
+      </p>
     </div>
+  )}
+
+  {/* Loading */}
+  {loadingReporte && (
+    <div className="p-12 text-center">
+      <div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4"></div>
+      <p className="text-muted-foreground">Cargando datos...</p>
+    </div>
+  )}
+
+  {/* Error */}
+  {errorReporte && (
+    <div className="p-6 m-4 bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-lg">
+      <div className="flex items-center gap-2 text-red-800 dark:text-red-400">
+        <AlertCircle className="h-5 w-5" />
+        <p className="font-medium">Error al cargar datos:</p>
+      </div>
+      <p className="text-sm text-red-600 dark:text-red-400 mt-1">{errorReporte}</p>
+    </div>
+  )}
+
+  {/* Tabla solo si hay datos */}
+  {/* Mensaje de sin datos */}
+{!loadingReporte && reporteHornos.length === 0 && (
+  <div className="p-12 text-center">
+    <Database className="h-12 w-12 mx-auto text-muted-foreground opacity-20 mb-4" />
+    <p className="text-muted-foreground">
+      No hay datos para mostrar. Haz clic en <strong>"Buscar Datos"</strong> para cargar el reporte.
+    </p>
+  </div>
+)}
+
+{/* Loading */}
+{loadingReporte && (
+  <div className="p-12 text-center">
+    <div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4"></div>
+    <p className="text-muted-foreground">Cargando datos...</p>
+  </div>
+)}
+
+{/* Error */}
+{errorReporte && (
+  <div className="p-6 m-4 bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-lg">
+    <div className="flex items-center gap-2 text-red-800 dark:text-red-400">
+      <AlertCircle className="h-5 w-5" />
+      <p className="font-medium">Error al cargar datos:</p>
+    </div>
+    <p className="text-sm text-red-600 dark:text-red-400 mt-1">{errorReporte}</p>
+  </div>
+)}
+
+{/* Tabla solo si hay datos */}
+{reporteHornos.length > 0 && (
+  <>
+    <Table>
+      <TableHeader>
+        <TableRow className={darkMode ? "border-gray-800 hover:bg-gray-800/50" : ""}>
+          <TableHead>Fecha Registro</TableHead>
+          <TableHead>Número OT</TableHead>
+          <TableHead>Peso Unit.</TableHead>
+          <TableHead>Peso Total</TableHead>
+          <TableHead>Horno 1</TableHead>
+          <TableHead>Horno 2</TableHead>
+          <TableHead>Horno 3</TableHead>
+          <TableHead>Horno 4</TableHead>
+          <TableHead>Horno 5</TableHead>
+          <TableHead>Horno 6</TableHead>
+          <TableHead>Horno 7</TableHead>
+          <TableHead>Usuario</TableHead>
+          <TableHead className="text-right">Acciones</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {reporteHornos.map((registro, index) => (
+          <TableRow key={index} className={darkMode ? "border-gray-800 hover:bg-gray-800/50" : ""}>
+            <TableCell className="font-medium">
+              {new Date(registro.Fecha_Registro).toLocaleString('es-PE', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+              })}
+            </TableCell>
+            <TableCell>
+              <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
+                {registro.Numero_OT}
+              </span>
+            </TableCell>
+            <TableCell>{registro.Peso_Unitario ? Number(registro.Peso_Unitario).toFixed(2) : '-'}</TableCell>
+            <TableCell>{registro.Peso_Total ? Number(registro.Peso_Total).toFixed(2) : '-'}</TableCell>
+            <TableCell>
+              <span className={cn("inline-flex items-center rounded-full px-2 py-1 text-xs font-medium", 
+                darkMode ? "bg-orange-900/20 text-orange-400 ring-1 ring-orange-500/20" : "bg-orange-100 text-orange-800 ring-1 ring-orange-600/20")}>
+                {registro.TEMPERATURA_HORNO1 ? Number(registro.TEMPERATURA_HORNO1).toFixed(1) : '-'}°
+              </span>
+            </TableCell>
+            <TableCell>
+              <span className={cn("inline-flex items-center rounded-full px-2 py-1 text-xs font-medium", 
+                darkMode ? "bg-orange-900/20 text-orange-400 ring-1 ring-orange-500/20" : "bg-orange-100 text-orange-800 ring-1 ring-orange-600/20")}>
+                {registro.TEMPERATURA_HORNO2 ? Number(registro.TEMPERATURA_HORNO2).toFixed(1) : '-'}°
+              </span>
+            </TableCell>
+            <TableCell>
+              <span className={cn("inline-flex items-center rounded-full px-2 py-1 text-xs font-medium", 
+                darkMode ? "bg-orange-900/20 text-orange-400 ring-1 ring-orange-500/20" : "bg-orange-100 text-orange-800 ring-1 ring-orange-600/20")}>
+                {registro.TEMPERATURA_HORNO3 ? Number(registro.TEMPERATURA_HORNO3).toFixed(1) : '-'}°
+              </span>
+            </TableCell>
+            <TableCell>
+              <span className={cn("inline-flex items-center rounded-full px-2 py-1 text-xs font-medium", 
+                darkMode ? "bg-orange-900/20 text-orange-400 ring-1 ring-orange-500/20" : "bg-orange-100 text-orange-800 ring-1 ring-orange-600/20")}>
+                {registro.TEMPERATURA_HORNO4 ? Number(registro.TEMPERATURA_HORNO4).toFixed(1) : '-'}°
+              </span>
+            </TableCell>
+            <TableCell>
+              <span className={cn("inline-flex items-center rounded-full px-2 py-1 text-xs font-medium", 
+                darkMode ? "bg-orange-900/20 text-orange-400 ring-1 ring-orange-500/20" : "bg-orange-100 text-orange-800 ring-1 ring-orange-600/20")}>
+                {registro.TEMPERATURA_HORNO5 ? Number(registro.TEMPERATURA_HORNO5).toFixed(1) : '-'}°
+              </span>
+            </TableCell>
+            <TableCell>
+              <span className={cn("inline-flex items-center rounded-full px-2 py-1 text-xs font-medium", 
+                darkMode ? "bg-orange-900/20 text-orange-400 ring-1 ring-orange-500/20" : "bg-orange-100 text-orange-800 ring-1 ring-orange-600/20")}>
+                {registro.TEMPERATURA_HORNO6 ? Number(registro.TEMPERATURA_HORNO6).toFixed(1) : '-'}°
+              </span>
+            </TableCell>
+            <TableCell>
+              <span className={cn("inline-flex items-center rounded-full px-2 py-1 text-xs font-medium", 
+                darkMode ? "bg-orange-900/20 text-orange-400 ring-1 ring-orange-500/20" : "bg-orange-100 text-orange-800 ring-1 ring-orange-600/20")}>
+                {registro.TEMPERATURA_HORNO7 ? Number(registro.TEMPERATURA_HORNO7).toFixed(1) : '-'}°
+              </span>
+            </TableCell>
+            <TableCell>{registro.Usuario || '-'}</TableCell>
+            <TableCell className="text-right">
+              <div className="flex justify-end gap-2">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50" 
+                  onClick={() => handleViewDetails(registro.Numero_OT)}
+                >
+                  <Eye className="h-4 w-4" />
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50" 
+                  onClick={handleExportCSV}
+                >
+                  <Download className="h-4 w-4" />
+                </Button>
+              </div>
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+    
+    {/* Paginación */}
+    <div className="p-4 border-t border-border flex items-center justify-between">
+      <span className="text-sm text-muted-foreground">
+        Mostrando {reporteHornos.length} registros
+      </span>
+      <Pagination>
+        <PaginationContent>
+          <PaginationItem><PaginationPrevious href="#" className={darkMode ? "hover:bg-gray-800" : ""} /></PaginationItem>
+          <PaginationItem><PaginationLink href="#" isActive>1</PaginationLink></PaginationItem>
+          <PaginationItem><PaginationLink href="#" className={darkMode ? "hover:bg-gray-800" : ""}>2</PaginationLink></PaginationItem>
+          <PaginationItem><PaginationLink href="#" className={darkMode ? "hover:bg-gray-800" : ""}>3</PaginationLink></PaginationItem>
+          <PaginationItem><PaginationEllipsis /></PaginationItem>
+          <PaginationItem><PaginationNext href="#" className={darkMode ? "hover:bg-gray-800" : ""} /></PaginationItem>
+        </PaginationContent>
+      </Pagination>
+    </div>
+  </>
+)}
+</div>
+</div>
   );
 
   // --- VISTA DASHBOARD (BLANCO) ---
