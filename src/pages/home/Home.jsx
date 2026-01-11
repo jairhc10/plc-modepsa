@@ -1,135 +1,92 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
-import {
-  Home as HomeIcon,
-  Settings,
-  LogOut,
-  Search,
-  Filter,
-  Download,
-  Eye,
-  CalendarIcon,
-  Moon,
-  Sun,
-  Bell,
-  ChevronDown,
-  ChevronRight,
-  Folder,
-  Database,
-  Cpu,
-  Activity,
-  AlertCircle,
-  Clock,
-  User,
-  Shield,
-  BarChart3,
-  Layers,
-  FileBarChart,
-} from 'lucide-react';
-import {
-  SidebarProvider,
-  Sidebar,
-  SidebarContent,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-  SidebarFooter,
-  SidebarInset,
-  SidebarTrigger,
-  useSidebar,
-} from '../../components/ui/sidebar';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '../../components/ui/table';
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-  PaginationEllipsis,
-} from '../../components/ui/pagination';
+import {Home as HomeIcon,Settings,LogOut,Search,Filter,Download,Eye,Calendar as CalendarIcon,Moon,Sun,Bell,Database,Cpu,Activity,AlertCircle,User,Shield,FileBarChart,X,ChevronDown,ChevronRight,ChevronLeft} from 'lucide-react';
+import {SidebarProvider,Sidebar,SidebarContent,SidebarHeader,SidebarMenu,SidebarMenuItem,SidebarMenuButton,SidebarFooter,SidebarInset,SidebarTrigger,useSidebar,} from '../../components/ui/sidebar';
+import {Table,TableBody,TableCell,TableHead,TableHeader,TableRow} from '../../components/ui/table';
+import {Pagination,PaginationContent,PaginationItem,PaginationLink,PaginationNext,PaginationPrevious,PaginationEllipsis} from '../../components/ui/pagination';
 import { Button } from '../../components/ui/button';
-import { Calendar } from '../../components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '../../components/ui/popover';
 import { Toaster, toast } from '../../components/ui/sonner';
 import { Input } from '../../components/ui/input';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils'; 
+import DateRangeCalendar from '@/components/ui/calendar';
 
-function CollapsibleMenuItem({ icon: Icon, label, children, defaultOpen = false }) {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
-  const { state: sidebarState } = useSidebar();
-  
-  return (
-    <div className="space-y-1">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className={cn(
-          "flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm transition-all duration-200",
-          "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-          sidebarState === "collapsed" && "justify-center px-2"
-        )}
-      >
-        <div className="flex items-center gap-2">
-          {Icon && (
-            <Icon className={cn(
-              "h-5 w-5 flex-shrink-0 transition-all duration-200",
-              sidebarState === "collapsed" && "mx-auto"
-            )} />
-          )}
-          <span className={cn(
-            "truncate transition-all duration-200",
-            sidebarState === "collapsed" ? "w-0 opacity-0 overflow-hidden" : "w-full opacity-100 ml-1"
-          )}>
-            {label}
-          </span>
-        </div>
-        {sidebarState !== "collapsed" && (
-          <div className="transition-all duration-200">
-            {isOpen ? (
-              <ChevronDown className="h-4 w-4 shrink-0" />
-            ) : (
-              <ChevronRight className="h-4 w-4 shrink-0" />
-            )}
-          </div>
-        )}
-      </button>
-      
-      {isOpen && sidebarState !== "collapsed" && (
-        <div className="ml-6 space-y-1 border-l-2 border-sidebar-border pl-3">
-          {children}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function HomeContent() {
+// =========================================================================
+// 1. COMPONENTE INTERNO: AQUÍ VA TODA TU LÓGICA, ESTADOS Y VISTAS
+// =========================================================================
+function DashboardInternal() {
+  // AHORA SÍ FUNCIONA: useSidebar se llama aquí porque este componente
+  // será hijo del Provider definido más abajo.
+  const { state: sidebarState } = useSidebar(); 
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const { open, setOpen } = useSidebar();
+  
+  // --- ESTADO INICIAL ---
   const [activeMenu, setActiveMenu] = useState('dashboard');
-  const [date, setDate] = useState();
+  
   const [ootFilter, setOotFilter] = useState('all');
   const [plcFilter, setPlcFilter] = useState('all');
   const [darkMode, setDarkMode] = useState(() => {
-    return localStorage.getItem('theme') === 'dark' || 
-           document.documentElement.classList.contains('dark');
+    return localStorage.getItem('theme') === 'dark' || document.documentElement.classList.contains('dark');
   });
   const [searchTerm, setSearchTerm] = useState('');
   
-  const { state: sidebarState } = useSidebar();
+  // Date Range Picker State
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [dateRange, setDateRange] = useState({ from: null, to: null });
+  const [hoveredDate, setHoveredDate] = useState(null);
+  const calendarRef = useRef(null);
 
+  // Lógica del Calendario
+  const now = new Date();
+  const [leftDate, setLeftDate] = useState(new Date(now.getFullYear(), now.getMonth(), 1));
+  const [rightDate, setRightDate] = useState(new Date(now.getFullYear(), now.getMonth() + 1, 1));
+  
+  const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
+  const handleLeftMonthChange = (newMonth) => { const newDate = new Date(leftDate); newDate.setMonth(newMonth); setLeftDate(newDate); };
+  const handleLeftYearChange = (newYear) => { const newDate = new Date(leftDate); newDate.setFullYear(newYear); setLeftDate(newDate); };
+  const prevMonthLeft = () => handleLeftMonthChange(leftDate.getMonth() - 1);
+  const nextMonthLeft = () => handleLeftMonthChange(leftDate.getMonth() + 1);
+
+  const handleRightMonthChange = (newMonth) => { const newDate = new Date(rightDate); newDate.setMonth(newMonth); setRightDate(newDate); };
+  const handleRightYearChange = (newYear) => { const newDate = new Date(rightDate); newDate.setFullYear(newYear); setRightDate(newDate); };
+  const prevMonthRight = () => handleRightMonthChange(rightDate.getMonth() - 1);
+  const nextMonthRight = () => handleRightMonthChange(rightDate.getMonth() + 1);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (calendarRef.current && !calendarRef.current.contains(event.target)) {
+        setIsCalendarOpen(false);
+      }
+    }
+    if (isCalendarOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isCalendarOpen]);
+
+  const handleDateClick = (date) => {
+    if (!dateRange.from || (dateRange.from && dateRange.to)) {
+      setDateRange({ from: date, to: null });
+    } else if (date >= dateRange.from) {
+      setDateRange({ ...dateRange, to: date });
+      setIsCalendarOpen(false);
+    } else {
+      setDateRange({ from: date, to: null });
+    }
+  };
+
+  const formatDate = (date) => {
+    if (!date) return '';
+    return `${date.getDate()} de ${monthNames[date.getMonth()]}, ${date.getFullYear()}`;
+  };
+
+  const clearDateSelection = () => setDateRange({ from: null, to: null });
+
+  // DATOS MOCKEADOS
   const registros = [
     { id: 'RR0281', fecha: '24 Oct 2023, 10:45:22', plc: 'PLC-01', oot: 'OOT-BB21', variable: 'TEMP_SENSOR_A1', valor: '85.4°C', estado: 'Finalizado' },
     { id: 'RR0282', fecha: '24 Oct 2023, 10:45:25', plc: 'PLC-01', oot: 'OOT-BB21', variable: 'PRESSURE_V2', valor: '121 Bar', estado: 'Pendiente' },
@@ -139,47 +96,9 @@ function HomeContent() {
   ];
 
   const menuItems = [
-    {
-      type: 'item',
-      id: 'dashboard',
-      label: 'Dashboard',
-      icon: HomeIcon,
-    },
-    {
-      type: 'group',
-      id: 'active-file',
-      label: 'Active File',
-      icon: Folder,
-      items: [
-        { id: 'compress', label: 'Compress', icon: Layers },
-        { id: 'inference', label: 'Inference', icon: Cpu },
-        { id: 'playground', label: 'Playground', icon: Activity },
-        { id: 'history', label: 'History', icon: Clock },
-      ]
-    },
-    {
-      type: 'group',
-      id: 'project',
-      label: 'Project',
-      icon: Database,
-      items: [
-        { id: 'design', label: 'Design Engineering', icon: Settings },
-        { id: 'sales', label: 'Sales & Marketing', icon: BarChart3 },
-        { id: 'travel', label: 'Travel', icon: Activity },
-      ]
-    },
-    {
-      type: 'item',
-      id: 'reports',
-      label: 'Reports',
-      icon: FileBarChart,
-    },
-    {
-      type: 'item',
-      id: 'settings',
-      label: 'Settings',
-      icon: Settings,
-    },
+    { type: 'item', id: 'dashboard', label: 'Dashboard', icon: HomeIcon },
+    { type: 'item', id: 'reports', label: 'Reports', icon: FileBarChart },
+    { type: 'item', id: 'settings', label: 'Settings', icon: Settings },
   ];
 
   const handleLogout = () => {
@@ -189,7 +108,7 @@ function HomeContent() {
   };
 
   const clearFilters = () => {
-    setDate(undefined);
+    setDateRange({ from: null, to: null });
     setOotFilter('all');
     setPlcFilter('all');
     setSearchTerm('');
@@ -199,7 +118,6 @@ function HomeContent() {
   const toggleDarkMode = () => {
     const newDarkMode = !darkMode;
     setDarkMode(newDarkMode);
-    
     if (newDarkMode) {
       document.documentElement.classList.add('dark');
       localStorage.setItem('theme', 'dark');
@@ -214,580 +132,304 @@ function HomeContent() {
       registro.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       registro.variable.toLowerCase().includes(searchTerm.toLowerCase()) ||
       registro.oot.toLowerCase().includes(searchTerm.toLowerCase());
-    
     const matchesOOT = ootFilter === 'all' || registro.oot === ootFilter;
     const matchesPLC = plcFilter === 'all' || registro.plc === plcFilter;
-    
     return matchesSearch && matchesOOT && matchesPLC;
   });
 
-  const handleExportCSV = () => {
-    toast.success('Exportando datos a CSV...');
-  };
+  const handleExportCSV = () => toast.success('Exportando datos a CSV...');
+  const handleViewDetails = (id) => toast.info(`Viendo detalles del registro ${id}`);
 
-  const handleViewDetails = (id) => {
-    toast.info(`Viendo detalles del registro ${id}`);
-  };
+  // --- VISTA REPORTES (Contenido completo) ---
+  const renderReportsView = () => (
+    <div className="space-y-6 animate-in fade-in duration-500">
+      {/* Estadísticas */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {[
+          { label: 'Total PLCs', value: '12', icon: Cpu, light: 'bg-blue-500', dark: 'bg-blue-600', text: 'text-white' },
+          { label: 'Registros Hoy', value: '1,245', icon: Database, light: 'bg-green-500', dark: 'bg-green-600', text: 'text-white' },
+          { label: 'Alertas Activas', value: '8', icon: AlertCircle, light: 'bg-red-500', dark: 'bg-red-600', text: 'text-white' },
+          { label: 'OOT Activas', value: '24', icon: Activity, light: 'bg-purple-500', dark: 'bg-purple-600', text: 'text-white' },
+        ].map((stat, index) => {
+          const Icon = stat.icon;
+          return (
+            <div key={index} className={cn("rounded-lg border p-6", darkMode ? "bg-card border-border" : "bg-card")}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className={cn("text-sm font-medium", darkMode ? "text-muted-foreground" : "text-muted-foreground")}>{stat.label}</p>
+                  <p className="text-2xl font-bold">{stat.value}</p>
+                </div>
+                <div className={cn("rounded-lg p-3", darkMode ? stat.dark : stat.light, stat.text)}>
+                  <Icon className="h-6 w-6" />
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      
+      {/* Filtros */}
+      <div className={cn("rounded-lg border p-6", darkMode ? "bg-card border-border" : "bg-card")}>
+  <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="flex items-center gap-2">
+      <Filter className={cn("h-5 w-5", darkMode ? "text-blue-400" : "text-primary")} />
+      <h2 className="text-lg font-semibold">Filtros de Búsqueda</h2>
+    </div>
+    <Button variant="ghost" size="sm" onClick={clearFilters} className="self-start sm:self-center">Limpiar Todo</Button>
+  </div>
+        
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    {/* Campo de búsqueda */}
+    <div className="space-y-2">
+      <label className={cn("text-sm font-medium", darkMode ? "text-foreground" : "")}>Buscar</label>
+      <div className="relative">
+        <Search className={cn("absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2", darkMode ? "text-muted-foreground" : "text-muted-foreground")} />
+        <Input placeholder="ID, Variable, OOT..." className="pl-9 w-full" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+      </div>
+    </div>
+          
+          
+         {/* Calendario Range Picker */}
+    <div className="space-y-3 relative" ref={calendarRef}>
+      <label className={cn("text-sm font-medium block", darkMode ? "text-foreground" : "")}>Rango de Fechas</label>
+      <button
+        onClick={() => setIsCalendarOpen(!isCalendarOpen)}
+        className={cn("w-full flex items-center justify-start gap-2 px-5 py-2 h-10 rounded-md border transition text-sm", 
+          darkMode ? "bg-background border-border text-foreground hover:bg-accent" : "bg-white border-input text-gray-900 hover:bg-gray-50")}
+      >
+        <CalendarIcon className="w-4 h-4" />
+        <span className={dateRange.from ? '' : 'text-gray-400'}>
+          {dateRange.from ? (dateRange.to ? `${formatDate(dateRange.from)} - ${formatDate(dateRange.to)}` : formatDate(dateRange.from)) : 'Seleccionar rango de fechas'}
+        </span>
+      </button>
+      {isCalendarOpen && (
+        <div className={`absolute z-50 mt-2 rounded-lg shadow-2xl border left-0 w-[680px] ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+          <div className="px-6 py-4 flex gap-6 justify-center">
+            <DateRangeCalendar darkMode={darkMode} year={leftDate.getFullYear()} month={leftDate.getMonth()} onDateClick={handleDateClick} dateRange={dateRange} hoveredDate={hoveredDate} onHoverDate={setHoveredDate} onLeaveDate={() => setHoveredDate(null)} onMonthChange={handleLeftMonthChange} onYearChange={handleLeftYearChange} onPreviousMonth={prevMonthLeft} onNextMonth={nextMonthLeft} showLeftArrow={true} showRightArrow={false} showNavigation={true} />
+            <div className={`w-px my-2 ${darkMode ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
+            <DateRangeCalendar darkMode={darkMode} year={rightDate.getFullYear()} month={rightDate.getMonth()} onDateClick={handleDateClick} dateRange={dateRange} hoveredDate={hoveredDate} onHoverDate={setHoveredDate} onLeaveDate={() => setHoveredDate(null)} onMonthChange={handleRightMonthChange} onYearChange={handleRightYearChange} onPreviousMonth={prevMonthRight} onNextMonth={nextMonthRight} showLeftArrow={false} showRightArrow={true} showNavigation={true} />
+          </div>
+          <div className={`px-4 py-3 border-t flex justify-end ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
+            {dateRange.from && (<button onClick={clearDateSelection} className={cn("flex items-center gap-2 px-3 py-1.5 text-xs rounded-md transition", darkMode ? "bg-red-500/10 text-red-400 hover:bg-red-500/20" : "bg-red-50 text-red-600 hover:bg-red-100")}>Limpiar Fechas</button>)}
+          </div>
+        </div>
+      )}
+    </div>
+          
+          {/* Selectores OOT */}
+    <div className="space-y-2">
+      <label className={cn("text-sm font-medium", darkMode ? "text-foreground" : "")}>OOT Status</label>
+      <div className="relative">
+        <select className={cn("w-full h-10 px-3 py-2 rounded-md border appearance-none", darkMode ? "bg-background border-border text-foreground" : "bg-background border-input")} value={ootFilter} onChange={(e) => setOotFilter(e.target.value)}>
+          <option value="all">Todos los estados</option>
+          <option value="OOT-BB21">OOT-BB21</option>
+          <option value="OOT-BB24">OOT-BB24</option>
+        </select>
+        <ChevronDown className="absolute right-3 top-3 h-4 w-4 opacity-50 pointer-events-none" />
+      </div>
+    </div>
+          {/* <div className="space-y-2">
+            <label className={cn("text-sm font-medium", darkMode ? "text-foreground" : "")}>PLC Origen</label>
+            <div className="relative">
+              <select className={cn("w-full h-10 px-3 py-2 rounded-md border appearance-none", darkMode ? "bg-background border-border text-foreground" : "bg-background border-input")} value={plcFilter} onChange={(e) => setPlcFilter(e.target.value)}>
+                <option value="all">Todos los PLCs</option>
+                <option value="PLC-01">PLC-01</option>
+                <option value="PLC-02">PLC-02</option>
+                <option value="PLC-03">PLC-03</option>
+              </select>
+              <ChevronDown className="absolute right-3 top-3 h-4 w-4 opacity-50 pointer-events-none" />
+            </div>
+          </div> */}
+        </div>
+      </div>
+
+      {/* Tabla */}
+      <div className={cn("rounded-lg border shadow-sm", darkMode ? "bg-card border-border" : "bg-card")}>
+        <div className="p-6 border-b border-border">
+          <h3 className="text-lg font-semibold">Registros Recientes</h3>
+          <p className="text-sm text-muted-foreground">Mostrando últimos movimientos del sistema</p>
+        </div>
+        <Table>
+          <TableHeader>
+            <TableRow className={darkMode ? "border-gray-800 hover:bg-gray-800/50" : ""}>
+              <TableHead className="w-[100px]">ID Registro</TableHead>
+              <TableHead>Fecha Hora</TableHead>
+              <TableHead>PLC</TableHead>
+              <TableHead>OOT</TableHead>
+              <TableHead>Variable</TableHead>
+              <TableHead>Valor</TableHead>
+              <TableHead>Estado</TableHead>
+              <TableHead className="text-right">Acciones</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredRegistros.map((registro) => (
+              <TableRow key={registro.id} className={darkMode ? "border-gray-800 hover:bg-gray-800/50" : ""}>
+                <TableCell className="font-medium">{registro.id}</TableCell>
+                <TableCell>{registro.fecha}</TableCell>
+                <TableCell><span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">{registro.plc}</span></TableCell>
+                <TableCell>{registro.oot}</TableCell>
+                <TableCell>{registro.variable}</TableCell>
+                <TableCell>{registro.valor}</TableCell>
+                <TableCell>
+                  <span className={cn("inline-flex items-center rounded-full px-2 py-1 text-xs font-medium", registro.estado === 'Finalizado' ? "bg-green-50 text-green-700 ring-1 ring-inset ring-green-600/20" : "bg-yellow-50 text-yellow-800 ring-1 ring-inset ring-yellow-600/20")}>
+                    {registro.estado}
+                  </span>
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="flex justify-end gap-2">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50" onClick={() => handleViewDetails(registro.id)}><Eye className="h-4 w-4" /></Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50" onClick={handleExportCSV}><Download className="h-4 w-4" /></Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+        
+        {/* Paginación */}
+        <div className="p-4 border-t border-border flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">Mostrando 5 de 42 resultados</span>
+            <Pagination>
+                <PaginationContent>
+                    <PaginationItem><PaginationPrevious href="#" className={darkMode ? "hover:bg-gray-800" : ""} /></PaginationItem>
+                    <PaginationItem><PaginationLink href="#" isActive>1</PaginationLink></PaginationItem>
+                    <PaginationItem><PaginationLink href="#" className={darkMode ? "hover:bg-gray-800" : ""}>2</PaginationLink></PaginationItem>
+                    <PaginationItem><PaginationLink href="#" className={darkMode ? "hover:bg-gray-800" : ""}>3</PaginationLink></PaginationItem>
+                    <PaginationItem><PaginationEllipsis /></PaginationItem>
+                    <PaginationItem><PaginationNext href="#" className={darkMode ? "hover:bg-gray-800" : ""} /></PaginationItem>
+                </PaginationContent>
+            </Pagination>
+        </div>
+      </div>
+    </div>
+  );
+
+  // --- VISTA DASHBOARD (BLANCO) ---
+  const renderDashboardView = () => (
+    <div className="flex flex-col items-center justify-center h-[60vh] text-center space-y-4 animate-in fade-in duration-500">
+      <div className={cn("p-4 rounded-full bg-muted", darkMode ? "bg-gray-800" : "bg-gray-100")}>
+        <Activity className="h-12 w-12 text-muted-foreground" />
+      </div>
+      <h2 className="text-2xl font-semibold">Panel Principal</h2>
+      <p className="text-muted-foreground max-w-md">
+        Bienvenido. Selecciona <b>Reports</b> en el menú para ver los datos del sistema.
+      </p>
+      <Button onClick={() => setActiveMenu('reports')}>
+        Ir a Reportes
+      </Button>
+    </div>
+  );
 
   return (
-    <div className={cn(
-      "min-h-screen w-full flex",
-      darkMode ? "bg-background text-gray-100" : "bg-background text-foreground"
-    )}>
-      <Toaster 
-        position="top-center"
-        richColors
-        closeButton
-        expand={false}
-        className="z-[9999]"
-      />
+    // ELIMINÉ <SidebarProvider> DE AQUÍ, YA QUE ESTE COMPONENTE VA DENTRO DE UNO
+    <div className={cn("flex min-h-screen w-full font-sans transition-colors duration-300", darkMode ? "bg-[#09090b] text-foreground" : "bg-[#f4f7fc] text-gray-900")}>
       
-      <Sidebar collapsible="icon">
-        <SidebarHeader>
-          <div className="flex items-center gap-3">
-            <div className={cn(
-              "flex h-10 w-10 items-center justify-center rounded-lg",
-              darkMode ? "bg-blue-600" : "bg-primary",
-              sidebarState === "collapsed" && "h-8 w-8 mx-auto"
-            )}>
-              <Shield className="h-5 w-5 text-white" />
-            </div>
-            <div className={cn(
-              "flex flex-col transition-all duration-300 overflow-hidden",
-              sidebarState === "collapsed" ? "w-0 opacity-0" : "w-full opacity-100"
-            )}>
-              <span className="font-bold text-sm leading-tight">PLC MODEPSA</span>
-              <span className="text-xs text-muted-foreground leading-tight">Control System</span>
-            </div>
+      {/* SIDEBAR */}
+      <Sidebar collapsible="icon"
+      className={cn("border-r shadow-sm z-50 transition-all duration-300 group/sidebar",
+         darkMode ? "bg-[#09090b] border-gray-800" : "bg-white border-gray-200")}>
+        <SidebarHeader className="h-16 flex items-center px-4 border-b border-border">
+          <div className="flex items-center gap-2 font-bold text-xl overflow-hidden">
+            <div className="h-8 w-8 rounded-lg bg-blue-600 flex items-center justify-center text-white shrink-0">
+              <Shield className="h-5 w-5" /></div>
+            <span className="group-data-[collapsible=icon]:hidden transition-all duration-200">SecureGuard</span>
           </div>
         </SidebarHeader>
-        
-        <SidebarContent>
+        <SidebarContent className="p-2">  
           <SidebarMenu>
-            {menuItems.map((item) => {
-              if (item.type === 'group') {
-                const GroupIcon = item.icon;
-                return (
-                  <SidebarMenuItem key={item.id}>
-                    <CollapsibleMenuItem 
-                      icon={GroupIcon} 
-                      label={item.label}
-                      defaultOpen={item.id === 'active-file'}
-                    >
-                      {item.items.map((subItem) => {
-                        const SubIcon = subItem.icon;
-                        return (
-                          <SidebarMenuButton
-                            key={subItem.id}
-                            isActive={activeMenu === subItem.id}
-                            onClick={() => setActiveMenu(subItem.id)}
-                            tooltip={subItem.label}
-                            className="pl-2"
-                          >
-                            <SubIcon className="h-4 w-4 flex-shrink-0" />
-                            {subItem.label}
-                          </SidebarMenuButton>
-                        );
-                      })}
-                    </CollapsibleMenuItem>
-                  </SidebarMenuItem>
-                );
-              }
-              
-              const Icon = item.icon;
-              return (
-                <SidebarMenuItem key={item.id}>
-                  <SidebarMenuButton
-                    isActive={activeMenu === item.id}
-                    onClick={() => setActiveMenu(item.id)}
-                    tooltip={item.label}
-                  >
-                    <Icon className="h-4 w-4 flex-shrink-0" />
-                    {item.label}
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              );
-            })}
+            {menuItems.map((item) => (
+              <SidebarMenuItem key={item.id}>
+                <SidebarMenuButton 
+                  tooltip={item.label} 
+                  onClick={() => setActiveMenu(item.id)}
+                  isActive={activeMenu === item.id}
+                  className={cn("w-full justify-start gap-3 px-3 py-6 rounded-md transition-all duration-200 group relative overflow-hidden", 
+                    activeMenu === item.id 
+                      ? (darkMode ? "bg-blue-600/10 text-blue-400 font-medium shadow-[inset_3px_0_0_0_#3b82f6]" : "bg-blue-50 text-blue-700 font-medium shadow-[inset_3px_0_0_0_#2563eb]") 
+                      : (darkMode ? "text-gray-400 hover:bg-gray-800/50 hover:text-gray-200" : "text-gray-600 hover:bg-gray-100 hover:text-gray-900")
+                  )}
+                >
+                  <item.icon className={cn("h-5 w-5 shrink-0 transition-transform duration-200", activeMenu === item.id ? "scale-110" : "group-hover:scale-110")} />
+                  <span className="group-data-[collapsible=icon]:hidden animate-in fade-in duration-200">{item.label}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))}
           </SidebarMenu>
         </SidebarContent>
-        
-        <SidebarFooter>
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted flex-shrink-0">
-                <User className="h-4 w-4" />
+
+        <SidebarFooter className="border-t border-border p-4">
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <div className="flex items-center gap-3 mb-2 transition-all group-data-[collapsible=icon]:justify-center">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white font-bold shadow-sm">
+                     A
+                  </div>
+                  <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
+                     <span className="font-semibold">{user?.email || 'Administrador'}</span>
+                     <span className="text-xs text-muted-foreground">Admin</span>
+                  </div>
               </div>
-              <div className={cn(
-                "flex flex-col transition-all duration-300 overflow-hidden",
-                sidebarState === "collapsed" ? "w-0 opacity-0" : "w-full opacity-100"
-              )}>
-                <span className="text-xs font-medium truncate">Administrador</span>
-                <span className="text-[10px] text-muted-foreground truncate">Admin</span>
-              </div>
-            </div>
+            </SidebarMenuItem>
             
-            <SidebarMenuButton
-              onClick={handleLogout}
-              tooltip="Cerrar sesión"
-              className={cn(
-                "w-full",
-                darkMode 
-                  ? "text-red-400 hover:bg-red-400/10 hover:text-red-300" 
-                  : "text-red-600 hover:bg-red-600/10 hover:text-red-700",
-                sidebarState === "collapsed" && "justify-center"
-              )}
-            >
-              <LogOut className="h-4 w-4 flex-shrink-0" />
-              Cerrar sesión
-            </SidebarMenuButton>
-          </div>
+            <SidebarMenuItem>
+              <SidebarMenuButton 
+                onClick={handleLogout} 
+                className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 justify-start group-data-[collapsible=icon]:justify-center"
+              >
+                <LogOut className="h-4 w-4" />
+                <span className="group-data-[collapsible=icon]:hidden">Cerrar sesión</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
         </SidebarFooter>
       </Sidebar>
-      
-      <SidebarInset className="flex-1">
-        <header className={cn(
-          "sticky top-0 z-10 border-b px-6 py-4",
-          darkMode 
-            ? "bg-card/95 border-border backdrop-blur-xl" 
-            : "bg-background border-border"
-        )}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <SidebarTrigger />
-              <div>
-                <h1 className="text-2xl font-bold">Dashboard PLC</h1>
-                <p className="text-sm text-muted-foreground">Sistema de monitoreo en tiempo real</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={toggleDarkMode}
-                className="h-9 w-9"
-              >
-                {darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-              </Button>
-              
-              <Button variant="ghost" size="icon" className="relative h-9 w-9">
-                <Bell className="h-5 w-5" />
-                <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-red-500"></span>
-              </Button>
-              
-              <div className="flex items-center gap-2">
-                <div className={cn(
-                  "h-9 w-9 rounded-full flex items-center justify-center flex-shrink-0",
-                  darkMode ? "bg-blue-600" : "bg-primary"
-                )}>
-                  <span className="text-sm font-semibold text-white">
-                    {user?.name?.charAt(0) || 'A'}
-                  </span>
-                </div>
-                <div className="hidden md:block">
-                  <p className="text-sm font-medium">{user?.name || 'Administrador'}</p>
-                  <p className="text-xs text-muted-foreground">{user?.role || 'Admin'}</p>
-                </div>
-              </div>
-            </div>
+
+      {/* CONTENIDO PRINCIPAL */}
+      <SidebarInset className={cn("flex flex-col flex-1 transition-all duration-300 w-full overflow-hidden", sidebarState === 'collapsed' ? 'ml-0' : '')}>
+        <header className={cn("h-16 flex items-center justify-between px-4 border-b transition-colors z-40 sticky top-0 backdrop-blur-sm", darkMode ? "bg-[#09090b]/80 border-gray-800" : "bg-white/80 border-gray-200")}>
+          <div className="flex items-center gap-4">
+            <SidebarTrigger className="-ml-2" />
+            <div className="h-6 w-px bg-border" />
+            <h1 className="text-lg font-semibold tracking-tight">
+              {activeMenu === 'dashboard' && 'Dashboard General'}
+              {activeMenu === 'reports' && 'Reportes del Sistema'}
+              {activeMenu === 'settings' && 'Configuración'}
+            </h1>
+          </div>
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" className="relative text-muted-foreground hover:text-foreground"><Bell className="h-5 w-5" /><span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-500 border-2 border-background"></span></Button>
+            <Button variant="ghost" size="icon" onClick={toggleDarkMode} className="text-muted-foreground hover:text-foreground">
+              {darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            </Button>
           </div>
         </header>
 
-        <main className="p-6 space-y-6 w-full">
-          {/* Estadísticas - Colores que cambian con dark mode */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              { 
-                label: 'Total PLCs', 
-                value: '12', 
-                icon: Cpu, 
-                light: 'bg-blue-500', 
-                dark: 'bg-blue-600',
-                text: 'text-white'
-              },
-              { 
-                label: 'Registros Hoy', 
-                value: '1,245', 
-                icon: Database, 
-                light: 'bg-green-500', 
-                dark: 'bg-green-600',
-                text: 'text-white'
-              },
-              { 
-                label: 'Alertas Activas', 
-                value: '8', 
-                icon: AlertCircle, 
-                light: 'bg-red-500', 
-                dark: 'bg-red-600',
-                text: 'text-white'
-              },
-              { 
-                label: 'OOT Activas', 
-                value: '24', 
-                icon: Activity, 
-                light: 'bg-purple-500', 
-                dark: 'bg-purple-600',
-                text: 'text-white'
-              },
-            ].map((stat, index) => {
-              const Icon = stat.icon;
-              return (
-                <div key={index} className={cn(
-                  "rounded-lg border p-6",
-                  darkMode ? "bg-card border-border" : "bg-card"
-                )}>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className={cn(
-                        "text-sm font-medium",
-                        darkMode ? "text-muted-foreground" : "text-muted-foreground"
-                      )}>{stat.label}</p>
-                      <p className="text-2xl font-bold">{stat.value}</p>
-                    </div>
-                    <div className={cn(
-                      "rounded-lg p-3",
-                      darkMode ? stat.dark : stat.light,
-                      stat.text
-                    )}>
-                      <Icon className="h-6 w-6" />
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          
-          {/* Filtros */}
-          <div className={cn(
-            "rounded-lg border p-6",
-            darkMode ? "bg-card border-border" : "bg-card"
-          )}>
-            <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-2">
-                <Filter className={cn(
-                  "h-5 w-5",
-                  darkMode ? "text-blue-400" : "text-primary"
-                )} />
-                <h2 className="text-lg font-semibold">Filtros de Búsqueda</h2>
-              </div>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={clearFilters} 
-                className="self-start sm:self-center"
-              >
-                Limpiar Todo
-              </Button>
+        <main className={cn("flex-1 p-6 overflow-auto scrollbar-thin", darkMode ? "scrollbar-thumb-gray-700 scrollbar-track-transparent" : "scrollbar-thumb-gray-200")}>
+          {activeMenu === 'dashboard' && renderDashboardView()}
+          {activeMenu === 'reports' && renderReportsView()}
+          {activeMenu === 'settings' && (
+            <div className="flex flex-col items-center justify-center h-[50vh] text-muted-foreground animate-in fade-in duration-500">
+              <Settings className="h-16 w-16 mb-4 opacity-20" />
+              <h3 className="text-xl font-medium">Configuración</h3>
+              <p>Ajustes del sistema próximamente...</p>
             </div>
-            
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <div className="space-y-2">
-                <label className={cn(
-                  "text-sm font-medium",
-                  darkMode ? "text-foreground" : ""
-                )}>Buscar</label>
-                <div className="relative">
-                  <Search className={cn(
-                    "absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2",
-                    darkMode ? "text-muted-foreground" : "text-muted-foreground"
-                  )} />
-                  <Input
-                    placeholder="ID, Variable, OOT..."
-                    className="pl-9 w-full"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <label className={cn(
-                  "text-sm font-medium",
-                  darkMode ? "text-foreground" : ""
-                )}>Fecha</label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        darkMode && "border-border bg-background text-foreground hover:bg-accent"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {date ? format(date, 'PPP', { locale: es }) : 'Seleccionar fecha'}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className={cn(
-                    "w-auto p-0",
-                    darkMode ? "bg-card border-border" : ""
-                  )} align="start">
-                    <Calendar
-                      mode="single"
-                      selected={date}
-                      onSelect={setDate}
-                      initialFocus
-                      className={darkMode ? "bg-card" : ""}
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-              
-              <div className="space-y-2">
-                <label className={cn(
-                  "text-sm font-medium",
-                  darkMode ? "text-foreground" : ""
-                )}>OOT</label>
-                <select
-                  className={cn(
-                    "flex h-10 w-full rounded-md border px-3 py-2 text-sm",
-                    darkMode 
-                      ? "border-border bg-background text-foreground focus:ring-ring" 
-                      : "border-input bg-background"
-                  )}
-                  value={ootFilter}
-                  onChange={(e) => setOotFilter(e.target.value)}
-                >
-                  <option value="all">Todos los OOT</option>
-                  <option value="OOT-BB21">OOT-BB21</option>
-                  <option value="OOT-BB22">OOT-BB22</option>
-                  <option value="OOT-BB24">OOT-BB24</option>
-                </select>
-              </div>
-              
-              <div className="space-y-2">
-                <label className={cn(
-                  "text-sm font-medium",
-                  darkMode ? "text-foreground" : ""
-                )}>PLC</label>
-                <select
-                  className={cn(
-                    "flex h-10 w-full rounded-md border px-3 py-2 text-sm",
-                    darkMode 
-                      ? "border-border bg-background text-foreground focus:ring-ring" 
-                      : "border-input bg-background"
-                  )}
-                  value={plcFilter}
-                  onChange={(e) => setPlcFilter(e.target.value)}
-                >
-                  <option value="all">Todos los PLC</option>
-                  <option value="PLC-01">PLC-01</option>
-                  <option value="PLC-02">PLC-02</option>
-                  <option value="PLC-03">PLC-03</option>
-                </select>
-              </div>
-            </div>
-            
-            <div className="mt-6 flex flex-wrap gap-2">
-              <Button className={cn(
-                "text-white",
-                darkMode 
-                  ? "bg-blue-600 hover:bg-blue-700" 
-                  : "bg-primary hover:bg-primary/90"
-              )}>
-                <Search className="mr-2 h-4 w-4" />
-                Buscar
-              </Button>
-              <Button 
-                variant="outline" 
-                onClick={() => setDate(new Date())}
-                className={darkMode ? "border-border hover:bg-accent" : ""}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                Hoy
-              </Button>
-            </div>
-          </div>
-          
-          {/* Tabla */}
-          <div className={cn(
-            "rounded-lg border overflow-hidden",
-            darkMode ? "bg-card border-border" : "bg-card"
-          )}>
-            <div className={cn(
-              "flex flex-col items-start justify-between gap-4 border-b p-4 sm:p-6 sm:flex-row sm:items-center",
-              darkMode ? "border-border" : ""
-            )}>
-              <div>
-                <h3 className="text-lg font-semibold">Registros PLC</h3>
-                <p className={cn(
-                  "text-sm",
-                  darkMode ? "text-muted-foreground" : "text-muted-foreground"
-                )}>
-                  {filteredRegistros.length} registros encontrados
-                </p>
-              </div>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={handleExportCSV}
-                className={darkMode ? "border-border hover:bg-accent" : ""}
-              >
-                <Download className="mr-2 h-4 w-4" />
-                Exportar CSV
-              </Button>
-            </div>
-            
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className={darkMode ? "hover:bg-accent/50" : ""}>
-                    <TableHead className={cn(
-                      "whitespace-nowrap",
-                      darkMode ? "text-foreground" : ""
-                    )}>ID Registro</TableHead>
-                    <TableHead className={cn(
-                      "whitespace-nowrap",
-                      darkMode ? "text-foreground" : ""
-                    )}>Fecha y Hora</TableHead>
-                    <TableHead className={cn(
-                      "whitespace-nowrap",
-                      darkMode ? "text-foreground" : ""
-                    )}>PLC</TableHead>
-                    <TableHead className={cn(
-                      "whitespace-nowrap",
-                      darkMode ? "text-foreground" : ""
-                    )}>OOT</TableHead>
-                    <TableHead className={cn(
-                      "whitespace-nowrap",
-                      darkMode ? "text-foreground" : ""
-                    )}>Variable</TableHead>
-                    <TableHead className={cn(
-                      "whitespace-nowrap",
-                      darkMode ? "text-foreground" : ""
-                    )}>Valor</TableHead>
-                    <TableHead className={cn(
-                      "whitespace-nowrap",
-                      darkMode ? "text-foreground" : ""
-                    )}>Estado</TableHead>
-                    <TableHead className={cn(
-                      "whitespace-nowrap",
-                      darkMode ? "text-foreground" : ""
-                    )}>Acciones</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredRegistros.map((registro) => (
-                    <TableRow key={registro.id} className={darkMode ? "hover:bg-accent/30" : "hover:bg-muted/50"}>
-                      <TableCell className="font-medium whitespace-nowrap">
-                        <div className="flex items-center gap-2">
-                          <div className={cn(
-                            "rounded-md p-1 shrink-0",
-                            darkMode ? "bg-blue-500/20" : "bg-primary/10"
-                          )}>
-                            <Cpu className={cn(
-                              "h-4 w-4",
-                              darkMode ? "text-blue-400" : "text-primary"
-                            )} />
-                          </div>
-                          {registro.id}
-                        </div>
-                      </TableCell>
-                      <TableCell className={darkMode ? "text-foreground" : ""}>{registro.fecha}</TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        <span className={cn(
-                          "inline-flex items-center rounded-full px-2 py-1 text-xs font-medium whitespace-nowrap",
-                          darkMode 
-                            ? "bg-blue-500/20 text-blue-300" 
-                            : "bg-primary/10 text-primary"
-                        )}>
-                          {registro.plc}
-                        </span>
-                      </TableCell>
-                      <TableCell className={darkMode ? "text-foreground" : ""}>{registro.oot}</TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        <code className={cn(
-                          "rounded px-2 py-1 text-xs whitespace-nowrap",
-                          darkMode ? "bg-accent text-foreground" : "bg-muted"
-                        )}>
-                          {registro.variable}
-                        </code>
-                      </TableCell>
-                      <TableCell className={cn(
-                        "font-semibold whitespace-nowrap",
-                        darkMode ? "text-foreground" : ""
-                      )}>{registro.valor}</TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        <span className={cn(
-                          "inline-flex items-center rounded-full px-2 py-1 text-xs font-medium whitespace-nowrap",
-                          registro.estado === 'Finalizado' 
-                            ? darkMode 
-                              ? 'bg-green-500/20 text-green-300' 
-                              : 'bg-green-100 text-green-800'
-                            : darkMode 
-                              ? 'bg-orange-500/20 text-orange-300' 
-                              : 'bg-orange-100 text-orange-800'
-                        )}>
-                          {registro.estado}
-                        </span>
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        <Button 
-                          variant="ghost" 
-                          size="icon"
-                          onClick={() => handleViewDetails(registro.id)}
-                          className="h-8 w-8"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </div>
-          
-          {/* Paginación */}
-          <div className={cn(
-            "rounded-lg border p-4",
-            darkMode ? "bg-card border-border" : "bg-card"
-          )}>
-            <Pagination>
-              <PaginationContent>
-                <PaginationItem>
-                  <PaginationPrevious href="#" className={darkMode ? "hover:bg-accent" : ""} />
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationLink 
-                    href="#" 
-                    isActive 
-                    className={cn(
-                      darkMode 
-                        ? "bg-blue-600 hover:bg-blue-700 text-white" 
-                        : ""
-                    )}
-                  >
-                    1
-                  </PaginationLink>
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationLink href="#" className={darkMode ? "hover:bg-accent" : ""}>2</PaginationLink>
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationLink href="#" className={darkMode ? "hover:bg-accent" : ""}>3</PaginationLink>
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationEllipsis className={darkMode ? "text-muted-foreground" : ""} />
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationNext href="#" className={darkMode ? "hover:bg-accent" : ""} />
-                </PaginationItem>
-              </PaginationContent>
-            </Pagination>
-          </div>
+          )}
         </main>
       </SidebarInset>
+      <Toaster position="top-right" theme={darkMode ? 'dark' : 'light'} />
     </div>
   );
 }
 
-function Home() {
+// =========================================================================
+// 2. COMPONENTE PADRE (WRAPPER): ESTE SE EXPORTA
+// SOLO SIRVE PARA DAR CONTEXTO AL DE ARRIBA
+// =========================================================================
+export default function HomeContent() {
   return (
     <SidebarProvider defaultOpen={true}>
-      <HomeContent />
+      <DashboardInternal />
     </SidebarProvider>
   );
 }
-
-export default Home;
