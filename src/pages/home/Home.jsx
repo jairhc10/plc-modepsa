@@ -371,114 +371,331 @@ const obtenerReporteHornos = async () => {
 {/* Tabla solo si hay datos */}
 {reporteHornos.length > 0 && (
   <>
-    <Table>
-      <TableHeader>
-        <TableRow className={darkMode ? "border-gray-800 hover:bg-gray-800/50" : ""}>
-          <TableHead>Fecha Registro</TableHead>
-          <TableHead>Número OT</TableHead>
-          <TableHead>Peso Unit.</TableHead>
-          <TableHead>Peso Total</TableHead>
-          <TableHead>Horno 1</TableHead>
-          <TableHead>Horno 2</TableHead>
-          <TableHead>Horno 3</TableHead>
-          <TableHead>Horno 4</TableHead>
-          <TableHead>Horno 5</TableHead>
-          <TableHead>Horno 6</TableHead>
-          <TableHead>Horno 7</TableHead>
-          <TableHead>Usuario</TableHead>
-          <TableHead className="text-right">Acciones</TableHead>
+    {/* Contenedor con scroll horizontal */}
+    <div className="overflow-x-auto">
+  <Table className="min-w-[2000px]">
+    <TableHeader>
+      <TableRow className={darkMode ? "border-gray-800 hover:bg-gray-800/50" : ""}>
+        <TableHead className="min-w-[120px]">Fecha Registro</TableHead>
+        <TableHead className="min-w-[120px]">Número OT</TableHead>
+        <TableHead className="min-w-[110px]">Peso Unit.</TableHead>
+        <TableHead className="min-w-[110px]">Peso Total</TableHead>
+        <TableHead className="min-w-[180px]">Fecha Fin Manual</TableHead>
+        <TableHead className="min-w-[180px]">Fecha Fin Auto</TableHead>
+        <TableHead className="min-w-[140px]">Modo Ingreso</TableHead>
+        <TableHead className="min-w-[100px]">Dureza 1</TableHead>
+        <TableHead className="min-w-[100px]">Dureza 2</TableHead>
+        <TableHead className="min-w-[100px]">Dureza 3</TableHead>
+        <TableHead className="min-w-[180px]">Fecha Modificación</TableHead>
+        <TableHead className="min-w-[120px]">Usuario</TableHead>
+        <TableHead className="min-w-[110px]">Temp. H1</TableHead>
+        <TableHead className="min-w-[110px]">Temp. H2</TableHead>
+        <TableHead className="min-w-[110px]">Temp. H3</TableHead>
+        <TableHead className="min-w-[110px]">Temp. H4</TableHead>
+        <TableHead className="min-w-[110px]">Temp. H5</TableHead>
+        <TableHead className="min-w-[110px]">Temp. H6</TableHead>
+        <TableHead className="min-w-[110px]">Temp. H7</TableHead>
+        <TableHead className="text-right sticky right-0 z-10 bg-background min-w-[120px]">Acciones</TableHead>
+      </TableRow>
+    </TableHeader>
+    <TableBody>
+      {reporteHornos.map((registro, index) => (
+        <TableRow key={index} className={darkMode ? "border-gray-800 hover:bg-gray-800/50" : ""}>
+          {/* Fecha Registro - Fixed */}
+          <TableCell className="font-medium sticky left-0 z-10 bg-background">
+            {new Date(registro.Fecha_Registro).toLocaleString('es-PE', {
+              day: '2-digit',
+              month: 'short',
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit'
+            })}
+          </TableCell>
+
+          {/* Número OT */}
+          <TableCell>
+            <span className="inline-flex items-center rounded-md bg-blue-50 dark:bg-blue-900/20 px-2 py-1 text-xs font-medium text-blue-700 dark:text-blue-400 ring-1 ring-inset ring-blue-700/10">
+              {registro.Numero_OT}
+            </span>
+          </TableCell>
+
+          {/* Peso Unitario */}
+          <TableCell>
+            {registro.Peso_Unitario ? (
+              <span className="font-medium">{Number(registro.Peso_Unitario).toFixed(2)}</span>
+            ) : (
+              <span className="inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-1 text-xs font-medium text-gray-500 dark:text-gray-400">
+                N/A
+              </span>
+            )}
+          </TableCell>
+
+          {/* Peso Total */}
+          <TableCell className="font-medium">
+            {registro.Peso_Total ? (
+              <span className="font-semibold text-green-600 dark:text-green-400">{Number(registro.Peso_Total).toFixed(2)}</span>
+            ) : (
+              <span className="inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-1 text-xs font-medium text-gray-500 dark:text-gray-400">
+                N/A
+              </span>
+            )}
+          </TableCell>
+
+          {/* Fecha Fin Manual */}
+          <TableCell className="text-sm">
+            {registro.Fecha_Fin_Manual ? (
+              <span className="text-muted-foreground">
+                {new Date(registro.Fecha_Fin_Manual).toLocaleString('es-PE', {
+                  day: '2-digit',
+                  month: 'short',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </span>
+            ) : (
+              <span className="inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-1 text-xs font-medium text-gray-500 dark:text-gray-400">
+                Sin registro
+              </span>
+            )}
+          </TableCell>
+
+          {/* Fecha Fin Auto */}
+          <TableCell className="text-sm">
+            {registro.Fecha_Fin_Auto ? (
+              <span className="text-muted-foreground">
+                {new Date(registro.Fecha_Fin_Auto).toLocaleString('es-PE', {
+                  day: '2-digit',
+                  month: 'short',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </span>
+            ) : (
+              <span className="inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-1 text-xs font-medium text-gray-500 dark:text-gray-400">
+                Sin registro
+              </span>
+            )}
+          </TableCell>
+
+          {/* Modo Ingreso Carga */}
+          <TableCell>
+            {registro.Modo_Ingreso_Carga ? (
+              <span className={cn("inline-flex items-center rounded-full px-2 py-1 text-xs font-medium",
+                registro.Modo_Ingreso_Carga === 'Automatico' 
+                  ? "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 ring-1 ring-green-600/20"
+                  : "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 ring-1 ring-blue-600/20"
+              )}>
+                {registro.Modo_Ingreso_Carga}
+              </span>
+            ) : (
+              <span className="inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-1 text-xs font-medium text-gray-500 dark:text-gray-400">
+                No definido
+              </span>
+            )}
+          </TableCell>
+
+          {/* Dureza 1 */}
+          <TableCell>
+            {registro.Dureza_1 ? (
+              <span className="inline-flex items-center rounded-full bg-purple-50 dark:bg-purple-900/20 px-2 py-1 text-xs font-medium text-purple-700 dark:text-purple-400 ring-1 ring-purple-600/20">
+                {Number(registro.Dureza_1).toFixed(1)}
+              </span>
+            ) : (
+              <span className="inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-1 text-xs font-medium text-gray-500 dark:text-gray-400">
+                Sin dato
+              </span>
+            )}
+          </TableCell>
+
+          {/* Dureza 2 */}
+          <TableCell>
+            {registro.Dureza_2 ? (
+              <span className="inline-flex items-center rounded-full bg-purple-50 dark:bg-purple-900/20 px-2 py-1 text-xs font-medium text-purple-700 dark:text-purple-400 ring-1 ring-purple-600/20">
+                {Number(registro.Dureza_2).toFixed(1)}
+              </span>
+            ) : (
+              <span className="inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-1 text-xs font-medium text-gray-500 dark:text-gray-400">
+                Sin dato
+              </span>
+            )}
+          </TableCell>
+
+          {/* Dureza 3 */}
+          <TableCell>
+            {registro.Dureza_3 ? (
+              <span className="inline-flex items-center rounded-full bg-purple-50 dark:bg-purple-900/20 px-2 py-1 text-xs font-medium text-purple-700 dark:text-purple-400 ring-1 ring-purple-600/20">
+                {Number(registro.Dureza_3).toFixed(1)}
+              </span>
+            ) : (
+              <span className="inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-1 text-xs font-medium text-gray-500 dark:text-gray-400">
+                Sin dato
+              </span>
+            )}
+          </TableCell>
+
+          {/* Fecha Modificación */}
+          <TableCell className="text-sm">
+            {registro.Fecha_Modificacion ? (
+              <span className="text-muted-foreground">
+                {new Date(registro.Fecha_Modificacion).toLocaleString('es-PE', {
+                  day: '2-digit',
+                  month: 'short',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </span>
+            ) : (
+              <span className="inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-1 text-xs font-medium text-gray-500 dark:text-gray-400">
+                Sin cambios
+              </span>
+            )}
+          </TableCell>
+
+          {/* Usuario */}
+          <TableCell>
+            {registro.Usuario ? (
+              <span className="inline-flex items-center gap-1">
+                <User className="h-3 w-3 text-muted-foreground" />
+                {registro.Usuario}
+              </span>
+            ) : (
+              <span className="inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-1 text-xs font-medium text-gray-500 dark:text-gray-400">
+                Sin asignar
+              </span>
+            )}
+          </TableCell>
+
+          {/* Temperatura Horno 1 - CON ESPACIO */}
+          <TableCell>
+            {registro["TEMPERATURA HORNO1"] ? (
+              <span className={cn("inline-flex items-center rounded-full px-2 py-1 text-xs font-medium", 
+                darkMode ? "bg-orange-900/20 text-orange-400 ring-1 ring-orange-500/20" : "bg-orange-100 text-orange-800 ring-1 ring-orange-600/20")}>
+                {Number(registro["TEMPERATURA HORNO1"]).toFixed(1)}°C
+              </span>
+            ) : (
+              <span className="inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-1 text-xs font-medium text-gray-500 dark:text-gray-400">
+                Inactivo
+              </span>
+            )}
+          </TableCell>
+
+          {/* Temperatura Horno 2 - CON ESPACIO */}
+          <TableCell>
+            {registro["TEMPERATURA HORNO2"] ? (
+              <span className={cn("inline-flex items-center rounded-full px-2 py-1 text-xs font-medium", 
+                darkMode ? "bg-orange-900/20 text-orange-400 ring-1 ring-orange-500/20" : "bg-orange-100 text-orange-800 ring-1 ring-orange-600/20")}>
+                {Number(registro["TEMPERATURA HORNO2"]).toFixed(1)}°C
+              </span>
+            ) : (
+              <span className="inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-1 text-xs font-medium text-gray-500 dark:text-gray-400">
+                Inactivo
+              </span>
+            )}
+          </TableCell>
+
+          {/* Temperatura Horno 3 - CON ESPACIO */}
+          <TableCell>
+            {registro["TEMPERATURA HORNO3"] ? (
+              <span className={cn("inline-flex items-center rounded-full px-2 py-1 text-xs font-medium", 
+                darkMode ? "bg-orange-900/20 text-orange-400 ring-1 ring-orange-500/20" : "bg-orange-100 text-orange-800 ring-1 ring-orange-600/20")}>
+                {Number(registro["TEMPERATURA HORNO3"]).toFixed(1)}°C
+              </span>
+            ) : (
+              <span className="inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-1 text-xs font-medium text-gray-500 dark:text-gray-400">
+                Inactivo
+              </span>
+            )}
+          </TableCell>
+
+          {/* Temperatura Horno 4 - CON ESPACIO */}
+          <TableCell>
+            {registro["TEMPERATURA HORNO4"] ? (
+              <span className={cn("inline-flex items-center rounded-full px-2 py-1 text-xs font-medium", 
+                darkMode ? "bg-orange-900/20 text-orange-400 ring-1 ring-orange-500/20" : "bg-orange-100 text-orange-800 ring-1 ring-orange-600/20")}>
+                {Number(registro["TEMPERATURA HORNO4"]).toFixed(1)}°C
+              </span>
+            ) : (
+              <span className="inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-1 text-xs font-medium text-gray-500 dark:text-gray-400">
+                Inactivo
+              </span>
+            )}
+          </TableCell>
+
+          {/* Temperatura Horno 5 - CON ESPACIO */}
+          <TableCell>
+            {registro["TEMPERATURA HORNO5"] ? (
+              <span className={cn("inline-flex items-center rounded-full px-2 py-1 text-xs font-medium", 
+                darkMode ? "bg-orange-900/20 text-orange-400 ring-1 ring-orange-500/20" : "bg-orange-100 text-orange-800 ring-1 ring-orange-600/20")}>
+                {Number(registro["TEMPERATURA HORNO5"]).toFixed(1)}°C
+              </span>
+            ) : (
+              <span className="inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-1 text-xs font-medium text-gray-500 dark:text-gray-400">
+                Inactivo
+              </span>
+            )}
+          </TableCell>
+
+          {/* Temperatura Horno 6 - CON ESPACIO */}
+          <TableCell>
+            {registro["TEMPERATURA HORNO6"] ? (
+              <span className={cn("inline-flex items-center rounded-full px-2 py-1 text-xs font-medium", 
+                darkMode ? "bg-orange-900/20 text-orange-400 ring-1 ring-orange-500/20" : "bg-orange-100 text-orange-800 ring-1 ring-orange-600/20")}>
+                {Number(registro["TEMPERATURA HORNO6"]).toFixed(1)}°C
+              </span>
+            ) : (
+              <span className="inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-1 text-xs font-medium text-gray-500 dark:text-gray-400">
+                Inactivo
+              </span>
+            )}
+          </TableCell>
+
+          {/* Temperatura Horno 7 - CON ESPACIO */}
+          <TableCell>
+            {registro["TEMPERATURA HORNO7"] ? (
+              <span className={cn("inline-flex items-center rounded-full px-2 py-1 text-xs font-medium", 
+                darkMode ? "bg-orange-900/20 text-orange-400 ring-1 ring-orange-500/20" : "bg-orange-100 text-orange-800 ring-1 ring-orange-600/20")}>
+                {Number(registro["TEMPERATURA HORNO7"]).toFixed(1)}°C
+              </span>
+            ) : (
+              <span className="inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-1 text-xs font-medium text-gray-500 dark:text-gray-400">
+                Inactivo
+              </span>
+            )}
+          </TableCell>
+
+          {/* Acciones - Fixed */}
+          <TableCell className="text-right sticky right-0 z-10 bg-background">
+            <div className="flex justify-end gap-2">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20" 
+                onClick={() => handleViewDetails(registro.Numero_OT)}
+              >
+                <Eye className="h-4 w-4" />
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-900/20" 
+                onClick={handleExportCSV}
+              >
+                <Download className="h-4 w-4" />
+              </Button>
+            </div>
+          </TableCell>
         </TableRow>
-      </TableHeader>
-      <TableBody>
-        {reporteHornos.map((registro, index) => (
-          <TableRow key={index} className={darkMode ? "border-gray-800 hover:bg-gray-800/50" : ""}>
-            <TableCell className="font-medium">
-              {new Date(registro.Fecha_Registro).toLocaleString('es-PE', {
-                day: '2-digit',
-                month: 'short',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit'
-              })}
-            </TableCell>
-            <TableCell>
-              <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
-                {registro.Numero_OT}
-              </span>
-            </TableCell>
-            <TableCell>{registro.Peso_Unitario ? Number(registro.Peso_Unitario).toFixed(2) : '-'}</TableCell>
-            <TableCell>{registro.Peso_Total ? Number(registro.Peso_Total).toFixed(2) : '-'}</TableCell>
-            <TableCell>
-              <span className={cn("inline-flex items-center rounded-full px-2 py-1 text-xs font-medium", 
-                darkMode ? "bg-orange-900/20 text-orange-400 ring-1 ring-orange-500/20" : "bg-orange-100 text-orange-800 ring-1 ring-orange-600/20")}>
-                {registro.TEMPERATURA_HORNO1 ? Number(registro.TEMPERATURA_HORNO1).toFixed(1) : '-'}°
-              </span>
-            </TableCell>
-            <TableCell>
-              <span className={cn("inline-flex items-center rounded-full px-2 py-1 text-xs font-medium", 
-                darkMode ? "bg-orange-900/20 text-orange-400 ring-1 ring-orange-500/20" : "bg-orange-100 text-orange-800 ring-1 ring-orange-600/20")}>
-                {registro.TEMPERATURA_HORNO2 ? Number(registro.TEMPERATURA_HORNO2).toFixed(1) : '-'}°
-              </span>
-            </TableCell>
-            <TableCell>
-              <span className={cn("inline-flex items-center rounded-full px-2 py-1 text-xs font-medium", 
-                darkMode ? "bg-orange-900/20 text-orange-400 ring-1 ring-orange-500/20" : "bg-orange-100 text-orange-800 ring-1 ring-orange-600/20")}>
-                {registro.TEMPERATURA_HORNO3 ? Number(registro.TEMPERATURA_HORNO3).toFixed(1) : '-'}°
-              </span>
-            </TableCell>
-            <TableCell>
-              <span className={cn("inline-flex items-center rounded-full px-2 py-1 text-xs font-medium", 
-                darkMode ? "bg-orange-900/20 text-orange-400 ring-1 ring-orange-500/20" : "bg-orange-100 text-orange-800 ring-1 ring-orange-600/20")}>
-                {registro.TEMPERATURA_HORNO4 ? Number(registro.TEMPERATURA_HORNO4).toFixed(1) : '-'}°
-              </span>
-            </TableCell>
-            <TableCell>
-              <span className={cn("inline-flex items-center rounded-full px-2 py-1 text-xs font-medium", 
-                darkMode ? "bg-orange-900/20 text-orange-400 ring-1 ring-orange-500/20" : "bg-orange-100 text-orange-800 ring-1 ring-orange-600/20")}>
-                {registro.TEMPERATURA_HORNO5 ? Number(registro.TEMPERATURA_HORNO5).toFixed(1) : '-'}°
-              </span>
-            </TableCell>
-            <TableCell>
-              <span className={cn("inline-flex items-center rounded-full px-2 py-1 text-xs font-medium", 
-                darkMode ? "bg-orange-900/20 text-orange-400 ring-1 ring-orange-500/20" : "bg-orange-100 text-orange-800 ring-1 ring-orange-600/20")}>
-                {registro.TEMPERATURA_HORNO6 ? Number(registro.TEMPERATURA_HORNO6).toFixed(1) : '-'}°
-              </span>
-            </TableCell>
-            <TableCell>
-              <span className={cn("inline-flex items-center rounded-full px-2 py-1 text-xs font-medium", 
-                darkMode ? "bg-orange-900/20 text-orange-400 ring-1 ring-orange-500/20" : "bg-orange-100 text-orange-800 ring-1 ring-orange-600/20")}>
-                {registro.TEMPERATURA_HORNO7 ? Number(registro.TEMPERATURA_HORNO7).toFixed(1) : '-'}°
-              </span>
-            </TableCell>
-            <TableCell>{registro.Usuario || '-'}</TableCell>
-            <TableCell className="text-right">
-              <div className="flex justify-end gap-2">
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50" 
-                  onClick={() => handleViewDetails(registro.Numero_OT)}
-                >
-                  <Eye className="h-4 w-4" />
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50" 
-                  onClick={handleExportCSV}
-                >
-                  <Download className="h-4 w-4" />
-                </Button>
-              </div>
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+      ))}
+    </TableBody>
+  </Table>
+    </div>
     
     {/* Paginación */}
-    <div className="p-4 border-t border-border flex items-center justify-between">
+   <div className="p-4 border-t border-border flex items-center justify-between">
       <span className="text-sm text-muted-foreground">
         Mostrando {reporteHornos.length} registros
       </span>
