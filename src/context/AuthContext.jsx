@@ -12,49 +12,102 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Verificar si hay usuario en sessionStorage al cargar
+  // Verificar si hay sesión guardada al cargar
   useEffect(() => {
-    const storedUser = sessionStorage.getItem('user');
-    if (storedUser) {
+    const storedToken = localStorage.getItem('token');
+    const storedUser = localStorage.getItem('user');
+    
+    if (storedToken && storedUser) {
       try {
+        setToken(storedToken);
         setUser(JSON.parse(storedUser));
+        
+        // Verificar si el token sigue siendo válido
+        verificarToken(storedToken);
       } catch (error) {
-        console.error('Error al parsear usuario:', error);
-        sessionStorage.removeItem('user');
+        console.error('Error al restaurar sesión:', error);
+        logout();
       }
     }
     setLoading(false);
   }, []);
 
-  const login = (email, password) => {
-    // Validar credenciales
-    if (email === 'admin@modepsa.com' && password === 'admin123') {
-      const userData = {
-        email,
-        name: 'Administrador',
-        role: 'Admin',
-        avatar: 'A'
-      };
-      setUser(userData);
-      sessionStorage.setItem('user', JSON.stringify(userData));
-      return { success: true };
+  // Verificar validez del token con el backend
+  const verificarToken = async (authToken) => {
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/verificar', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        // Token inválido o expirado
+        console.warn('Token inválido o expirado');
+        logout();
+      }
+    } catch (error) {
+      console.error('Error verificando token:', error);
+      // No hacemos logout aquí para no cerrar sesión si hay problemas de red
     }
-    return { success: false, message: 'Credenciales incorrectas' };
   };
 
+  // Login con el token y datos del usuario desde la API
+  const login = (authToken, userData) => {
+    setToken(authToken);
+    setUser({
+      id: userData.id,
+      name: userData.nombre,
+      usuario: userData.usuario,
+      dni: userData.dni,
+      role: 'Usuario', // Puedes ajustar según tu lógica
+      avatar: userData.nombre.charAt(0).toUpperCase()
+    });
+    
+    // Guardar en localStorage (persiste entre pestañas y recargas)
+    localStorage.setItem('token', authToken);
+    localStorage.setItem('user', JSON.stringify({
+      id: userData.id,
+      name: userData.nombre,
+      usuario: userData.usuario,
+      dni: userData.dni,
+      role: 'Usuario',
+      avatar: userData.nombre.charAt(0).toUpperCase()
+    }));
+  };
+
+  // Logout
   const logout = () => {
     setUser(null);
-    sessionStorage.removeItem('user');
+    setToken(null);
+    
+    // Limpiar almacenamiento
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    sessionStorage.removeItem('user'); // Limpiar también sessionStorage por compatibilidad
+  };
+
+  // Función helper para obtener headers autorizados
+  const getAuthHeaders = () => {
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    };
   };
 
   const value = {
     user,
+    token,
     login,
     logout,
     loading,
-    isAuthenticated: !!user
+    isAuthenticated: !!user && !!token,
+    getAuthHeaders // Útil para hacer peticiones autenticadas
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

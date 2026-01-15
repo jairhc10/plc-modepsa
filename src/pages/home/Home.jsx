@@ -11,6 +11,10 @@ import { Input } from '../../components/ui/input';
 import { cn } from '@/lib/utils'; 
 import DateRangeCalendar from '@/components/ui/calendar';
 import { reportesService } from '../../services/reportesService';
+import { FileSpreadsheet } from "lucide-react";
+import * as XLSX from "xlsx";
+
+
 
 // =========================================================================
 // 1. COMPONENTE INTERNO: AQUÍ VA TODA TU LÓGICA, ESTADOS Y VISTAS
@@ -57,6 +61,7 @@ function DashboardInternal() {
 
 
   const [reporteHornos, setReporteHornos] = useState([]);
+  const [reporteHornosExport, setReporteHornosExport] = useState([]);
   const [loadingReporte, setLoadingReporte] = useState(false);
   const [errorReporte, setErrorReporte] = useState(null);
 
@@ -147,38 +152,95 @@ function DashboardInternal() {
   const handleViewDetails = (id) => toast.info(`Viendo detalles del registro ${id}`);
 
   // Función para obtener reporte de hornos
-const obtenerReporteHornos = async () => {
+ const obtenerReporteHornos = async () => {
   setLoadingReporte(true);
   setErrorReporte(null);
-  
+
   try {
-    const filtros = {
-      fecha_desde: dateRange.from ? dateRange.from.toISOString().split('T')[0] : null,
-      fecha_hasta: dateRange.to ? dateRange.to.toISOString().split('T')[0] : null,
+    const filtrosBase = {
+      fecha_desde: dateRange.from
+        ? dateRange.from.toISOString().split('T')[0]
+        : null,
+      fecha_hasta: dateRange.to
+        ? dateRange.to.toISOString().split('T')[0]
+        : null,
       numero_ot: ootFilter !== 'all' ? ootFilter : null,
     };
-    
-    console.log('Enviando filtros:', filtros); // Para debug
-    
-    const resultado = await reportesService.obtenerReporteHornos(filtros);
-    
-    console.log('Resultado recibido:', resultado); // Para debug
-    
-    if (resultado.success) {
-      setReporteHornos(resultado.data || []);
-      toast.success(`Se encontraron ${resultado.total} registros`);
-    } else {
-      setErrorReporte(resultado.error || 'Error al obtener datos');
-      toast.error('Error al cargar el reporte');
+
+    // 🔹 1. TABLA (limitada / paginada)
+    const tabla = await reportesService.obtenerReporteHornos({
+      ...filtrosBase,
+      paginado: true,
+      page: 1,
+      size: 20,
+    });
+
+    // 🔹 2. EXCEL (TODO SIN LÍMITE)
+    const excel = await reportesService.obtenerReporteHornos({
+      ...filtrosBase,
+      paginado: false,
+    });
+
+    if (!tabla.success) {
+      throw new Error(tabla.error || 'Error al obtener reporte');
     }
+
+    setReporteHornos(tabla.data || []);
+    setReporteHornosExport(excel.data || []);
+
+    toast.success(`Se encontraron ${excel.total} registros`);
+
   } catch (error) {
-    console.error('Error completo:', error); // Para debug
     setErrorReporte(error.message || 'Error desconocido');
-    toast.error('Error de conexión con el servidor');
+    toast.error('Error al cargar el reporte');
   } finally {
     setLoadingReporte(false);
   }
 };
+
+const handleExportExcel = () => {
+  if (reporteHornosExport.length === 0) {
+    toast.warning("No hay datos para exportar");
+    return;
+  }
+
+  // Mapeo limpio para Excel (headers bonitos)
+  const dataExcel = reporteHornosExport.map((r) => ({
+    "Fecha Registro": r.Fecha_Registro,
+    "Número OT": r.Numero_OT,
+    "Peso Unitario": r.Peso_Unitario,
+    "Peso Total": r.Peso_Total,
+    "Fecha Fin Manual": r.Fecha_Fin_Manual,
+    "Fecha Fin Automática": r.Fecha_Fin_Auto,
+    "Modo Ingreso": r.Modo_Ingreso_Carga,
+    "Dureza 1": r.Dureza_1,
+    "Dureza 2": r.Dureza_2,
+    "Dureza 3": r.Dureza_3,
+    "Usuario": r.Usuario,
+    "Temp H1": r["TEMPERATURA HORNO1"],
+    "Temp H2": r["TEMPERATURA HORNO2"],
+    "Temp H3": r["TEMPERATURA HORNO3"],
+    "Temp H4": r["TEMPERATURA HORNO4"],
+    "Temp H5": r["TEMPERATURA HORNO5"],
+    "Temp H6": r["TEMPERATURA HORNO6"],
+    "Temp H7": r["TEMPERATURA HORNO7"],
+  }));
+
+  const ws = XLSX.utils.json_to_sheet(dataExcel);
+  const wb = XLSX.utils.book_new();
+
+  XLSX.utils.book_append_sheet(wb, ws, "Reporte Hornos");
+
+  XLSX.writeFile(
+    wb,
+    `Reporte_Hornos_${new Date().toISOString().slice(0, 10)}.xlsx`
+  );
+
+  toast.success("Excel exportado correctamente");
+};
+
+
+
 
   // --- VISTA REPORTES (Contenido completo) ---
   const renderReportsView = () => (
@@ -210,11 +272,12 @@ const obtenerReporteHornos = async () => {
       
       {/* Filtros */}
       <div className={cn("rounded-lg border p-6", darkMode ? "bg-card border-border" : "bg-card")}>
-  <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-    <div className="flex items-center gap-2">
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex items-center gap-2">
       <Filter className={cn("h-5 w-5", darkMode ? "text-blue-400" : "text-primary")} />
       <h2 className="text-lg font-semibold">Filtros de Búsqueda</h2>
     </div>
+
     <div className="flex gap-2">
   <Button 
     onClick={obtenerReporteHornos}
@@ -273,33 +336,37 @@ const obtenerReporteHornos = async () => {
         </div>
       )}
     </div>
-          
-          {/* Selectores OOT */}
-    <div className="space-y-2">
-      <label className={cn("text-sm font-medium", darkMode ? "text-foreground" : "")}>OOT Status</label>
-      <div className="relative">
-        <select className={cn("w-full h-10 px-3 py-2 rounded-md border appearance-none", darkMode ? "bg-background border-border text-foreground" : "bg-background border-input")} value={ootFilter} onChange={(e) => setOotFilter(e.target.value)}>
-          <option value="all">Todos los estados</option>
-          <option value="OOT-BB21">OOT-BB21</option>
-          <option value="OOT-BB24">OOT-BB24</option>
-        </select>
-        <ChevronDown className="absolute right-3 top-3 h-4 w-4 opacity-50 pointer-events-none" />
-      </div>
-    </div>
-          {/* <div className="space-y-2">
-            <label className={cn("text-sm font-medium", darkMode ? "text-foreground" : "")}>PLC Origen</label>
-            <div className="relative">
-              <select className={cn("w-full h-10 px-3 py-2 rounded-md border appearance-none", darkMode ? "bg-background border-border text-foreground" : "bg-background border-input")} value={plcFilter} onChange={(e) => setPlcFilter(e.target.value)}>
-                <option value="all">Todos los PLCs</option>
-                <option value="PLC-01">PLC-01</option>
-                <option value="PLC-02">PLC-02</option>
-                <option value="PLC-03">PLC-03</option>
-              </select>
-              <ChevronDown className="absolute right-3 top-3 h-4 w-4 opacity-50 pointer-events-none" />
-            </div>
-          </div> */}
-        </div>
-      </div>
+
+
+{/* Exportar Excel */}
+<div className="flex justify-center">
+<div className="space-y-2">
+  <label
+    className={cn(
+      "text-sm font-medium",
+      darkMode ? "text-muted-foreground" : "text-gray-700")}>
+      Exportar 
+  </label>
+
+  <Button 
+    onClick={handleExportExcel}
+    disabled={reporteHornos.length === 0}
+    title={
+        reporteHornosExport.length === 0
+        ? "No hay datos para exportar"
+        : "Exportar a Excel"
+    }
+    className={cn(
+      "w-full h-10 text-sm font-medium bg-green-600 hover:bg-green-700 text-white",
+      "disabled:opacity-50 disabled:cursor-not-allowed")}>
+    <FileSpreadsheet className="h-4 w-4 mr-2" />
+    Excel
+  </Button>
+</div>
+</div>
+
+</div>
+</div>
 
       {/* Tabla */}
       {/* Tabla */}
@@ -340,33 +407,6 @@ const obtenerReporteHornos = async () => {
 
   {/* Tabla solo si hay datos */}
   {/* Mensaje de sin datos */}
-{!loadingReporte && reporteHornos.length === 0 && (
-  <div className="p-12 text-center">
-    <Database className="h-12 w-12 mx-auto text-muted-foreground opacity-20 mb-4" />
-    <p className="text-muted-foreground">
-      No hay datos para mostrar. Haz clic en <strong>"Buscar Datos"</strong> para cargar el reporte.
-    </p>
-  </div>
-)}
-
-{/* Loading */}
-{loadingReporte && (
-  <div className="p-12 text-center">
-    <div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4"></div>
-    <p className="text-muted-foreground">Cargando datos...</p>
-  </div>
-)}
-
-{/* Error */}
-{errorReporte && (
-  <div className="p-6 m-4 bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-lg">
-    <div className="flex items-center gap-2 text-red-800 dark:text-red-400">
-      <AlertCircle className="h-5 w-5" />
-      <p className="font-medium">Error al cargar datos:</p>
-    </div>
-    <p className="text-sm text-red-600 dark:text-red-400 mt-1">{errorReporte}</p>
-  </div>
-)}
 
 {/* Tabla solo si hay datos */}
 {reporteHornos.length > 0 && (
@@ -395,7 +435,7 @@ const obtenerReporteHornos = async () => {
         <TableHead className="min-w-[110px]">Temp. H5</TableHead>
         <TableHead className="min-w-[110px]">Temp. H6</TableHead>
         <TableHead className="min-w-[110px]">Temp. H7</TableHead>
-        <TableHead className="text-right sticky right-0 z-10 bg-background min-w-[120px]">Acciones</TableHead>
+        <TableHead className="text-center sticky right-0 z-10 bg-background">Acciones</TableHead>
       </TableRow>
     </TableHeader>
     <TableBody>
@@ -667,27 +707,19 @@ const obtenerReporteHornos = async () => {
             )}
           </TableCell>
 
-          {/* Acciones - Fixed */}
-          <TableCell className="text-right sticky right-0 z-10 bg-background">
-            <div className="flex justify-end gap-2">
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20" 
-                onClick={() => handleViewDetails(registro.Numero_OT)}
-              >
-                <Eye className="h-4 w-4" />
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-900/20" 
-                onClick={handleExportCSV}
-              >
-                <Download className="h-4 w-4" />
-              </Button>
-            </div>
+          {/* Columna Acciones del Reporte*/}
+           <TableCell className="sticky right-0 z-10 bg-background w-24 px-2">
+           <div className="flex w-full justify-center items-center">
+            <Button
+             variant="ghost"
+             size="icon"
+             className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+            onClick={() => handleViewDetails(registro.Numero_OT)}>
+             <Eye className="h-4 w-4" />
+            </Button>
+           </div>
           </TableCell>
+
         </TableRow>
       ))}
     </TableBody>
@@ -744,7 +776,7 @@ const obtenerReporteHornos = async () => {
           <div className="flex items-center gap-2 font-bold text-xl overflow-hidden">
             <div className="h-8 w-8 rounded-lg bg-blue-600 flex items-center justify-center text-white shrink-0">
               <Shield className="h-5 w-5" /></div>
-            <span className="group-data-[collapsible=icon]:hidden transition-all duration-200">SecureGuard</span>
+            <span className="group-data-[collapsible=icon]:hidden transition-all duration-200">Modepsa</span>
           </div>
         </SidebarHeader>
         <SidebarContent className="p-2">  
@@ -761,7 +793,8 @@ const obtenerReporteHornos = async () => {
                       : (darkMode ? "text-gray-400 hover:bg-gray-800/50 hover:text-gray-200" : "text-gray-600 hover:bg-gray-100 hover:text-gray-900")
                   )}
                 >
-                  <item.icon className={cn("h-5 w-5 shrink-0 transition-transform duration-200", activeMenu === item.id ? "scale-110" : "group-hover:scale-110")} />
+                  <item.icon className={cn("h-5 w-5 shrink-0 transition-transform duration-200", 
+                    activeMenu === item.id ? "scale-110" : "group-hover:scale-110")} />
                   <span className="group-data-[collapsible=icon]:hidden animate-in fade-in duration-200">{item.label}</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>

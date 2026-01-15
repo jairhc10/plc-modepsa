@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Lock, Mail } from 'lucide-react';
+import { Eye, EyeOff, Lock, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../../context/AuthContext';
 
@@ -8,19 +8,43 @@ export default function Login() {
   const navigate = useNavigate();
   const { login } = useAuth();
   
-  const [email, setEmail] = useState('');
+  const [usuario, setUsuario] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async () => {
+    // Validaciones
+    if (!usuario.trim() || !password.trim()) {
+      toast.error('Campos incompletos', {
+        description: 'Por favor ingresa usuario y contraseña',
+        duration: 3000,
+      });
+      return;
+    }
+
     setIsLoading(true);
     
-    setTimeout(() => {
-      const result = login(email, password);
-      
-      if (result.success) {
-        toast.success('¡Bienvenido a MODEPSA!', {
+    try {
+      // Llamada a la API
+      const response = await fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          USUARIO: usuario.toUpperCase(), // Convertir a mayúsculas como en tu DB
+          CLAVE: password
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        // Guardar en contexto/localStorage
+        login(data.token, data.user);
+        
+        toast.success(`¡Bienvenido ${data.user.nombre}!`, {
           description: 'Inicio de sesión exitoso',
           duration: 3000,
         });
@@ -31,12 +55,19 @@ export default function Login() {
         }, 500);
       } else {
         toast.error('Credenciales incorrectas', {
-          description: 'Por favor verifica tu usuario y contraseña',
+          description: data.error || 'Por favor verifica tu usuario y contraseña',
           duration: 3000,
         });
-        setIsLoading(false);
       }
-    }, 1000);
+    } catch (error) {
+      toast.error('Error de conexión', {
+        description: 'No se pudo conectar con el servidor',
+        duration: 3000,
+      });
+      console.error('Error login:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleKeyPress = (e) => {
@@ -80,21 +111,22 @@ export default function Login() {
 
           {/* Inputs */}
           <div className="space-y-5">
-            {/* Email Input */}
+            {/* Usuario Input */}
             <div className="space-y-2">
               <label className="text-sm font-semibold text-white block pl-1">Usuario</label>
               <div className="relative group">
                 <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl opacity-0 group-focus-within:opacity-20 blur transition-opacity duration-300"></div>
                 
                 <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-400 transition-colors z-10" />
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-400 transition-colors z-10" />
                   <input
-                    type="email"
-                    placeholder="usuario@empresa.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    type="text"
+                    placeholder="Ingrese su Usuario"
+                    value={usuario}
+                    onChange={(e) => setUsuario(e.target.value)}
                     onKeyPress={handleKeyPress}
-                    className="relative w-full pl-12 pr-4 py-3.5 bg-slate-900/60 backdrop-blur-sm border-2 border-slate-700/50 rounded-xl text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500 focus:bg-slate-900/80 transition-all duration-300 shadow-inner"
+                    disabled={isLoading}
+                    className="relative w-full pl-12 pr-4 py-3.5 bg-slate-900/60 backdrop-blur-sm border-2 border-slate-700/50 rounded-xl text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500 focus:bg-slate-900/80 transition-all duration-300 shadow-inner uppercase disabled:opacity-50 disabled:cursor-not-allowed"
                   />
                 </div>
               </div>
@@ -114,12 +146,14 @@ export default function Login() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     onKeyPress={handleKeyPress}
-                    className="relative w-full pl-12 pr-14 py-3.5 bg-slate-900/60 backdrop-blur-sm border-2 border-slate-700/50 rounded-xl text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500 focus:bg-slate-900/80 transition-all duration-300 shadow-inner"
+                    disabled={isLoading}
+                    className="relative w-full pl-12 pr-14 py-3.5 bg-slate-900/60 backdrop-blur-sm border-2 border-slate-700/50 rounded-xl text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500 focus:bg-slate-900/80 transition-all duration-300 shadow-inner disabled:opacity-50 disabled:cursor-not-allowed"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-400 transition-colors z-10"
+                    disabled={isLoading}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-400 transition-colors z-10 disabled:opacity-50"
                   >
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
@@ -133,10 +167,15 @@ export default function Login() {
                 <input 
                   type="checkbox" 
                   className="w-4 h-4 rounded border-blue-300/50 bg-white/10 text-blue-500 focus:ring-2 focus:ring-blue-400 focus:ring-offset-0 cursor-pointer"
+                  disabled={isLoading}
                 />
                 <span className="group-hover:text-white transition-colors">Recordarme</span>
               </label>
-              <button type="button" className="text-blue-200 hover:text-white transition-colors font-medium">
+              <button 
+                type="button" 
+                className="text-blue-200 hover:text-white transition-colors font-medium disabled:opacity-50"
+                disabled={isLoading}
+              >
                 ¿Olvidaste tu contraseña?
               </button>
             </div>
