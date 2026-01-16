@@ -296,7 +296,7 @@ const handleExportExcel = () => {
     Limpiar Todo
   </Button>
 </div>
-    {/* <Button variant="ghost" size="sm" onClick={clearFilters} className="self-start sm:self-center">Limpiar Todo</Button> */}
+    {/* Limpiar Todo */}
   </div>
         
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -765,18 +765,18 @@ const handleExportExcel = () => {
   );
 
   return (
-    // ELIMINÉ <SidebarProvider> DE AQUÍ, YA QUE ESTE COMPONENTE VA DENTRO DE UNO
-    <div className={cn("flex min-h-screen w-full font-sans transition-colors duration-300", darkMode ? "bg-[#09090b] text-foreground" : "bg-[#f4f7fc] text-gray-900")}>
+    <div className={cn("flex min-h-screen w-full font-sans transition-colors duration-300", 
+        darkMode ? "bg-[#09090b] text-foreground" : "bg-[#f4f7fc] text-gray-900")}>
       
       {/* SIDEBAR */}
-      <Sidebar collapsible="icon"
+      <Sidebar collapsible="icon" 
       className={cn("border-r shadow-sm z-50 transition-all duration-300 group/sidebar",
          darkMode ? "bg-[#09090b] border-gray-800" : "bg-white border-gray-200")}>
         <SidebarHeader className="h-16 flex items-center px-4 border-b border-border">
           <div className="flex items-center gap-2 font-bold text-xl overflow-hidden">
             <div className="h-8 w-8 rounded-lg bg-blue-600 flex items-center justify-center text-white shrink-0">
               <Shield className="h-5 w-5" /></div>
-            <span className="group-data-[collapsible=icon]:hidden transition-all duration-200">Modepsa</span>
+            <span className="group-data-[state=collapsed]:hidden transition-all duration-200">Modepsa</span>
           </div>
         </SidebarHeader>
         <SidebarContent className="p-2">  
@@ -795,21 +795,21 @@ const handleExportExcel = () => {
                 >
                   <item.icon className={cn("h-5 w-5 shrink-0 transition-transform duration-200", 
                     activeMenu === item.id ? "scale-110" : "group-hover:scale-110")} />
-                  <span className="group-data-[collapsible=icon]:hidden animate-in fade-in duration-200">{item.label}</span>
+                  <span className="group-data-[state=collapsed]:hidden animate-in fade-in duration-200">{item.label}</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             ))}
           </SidebarMenu>
-        </SidebarContent>
+        </SidebarContent>s
 
         <SidebarFooter className="border-t border-border p-4">
           <SidebarMenu>
             <SidebarMenuItem>
-              <div className="flex items-center gap-3 mb-2 transition-all group-data-[collapsible=icon]:justify-center">
+              <div className="flex items-center gap-3 mb-2 transition-all group-data-[state=collapsed]:justify-center">
                   <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white font-bold shadow-sm">
                      A
                   </div>
-                  <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
+                  <div className="grid flex-1 text-left text-sm leading-tight group-data-[state=collapsed]:hidden">
                      <span className="font-semibold">{user?.email || 'Administrador'}</span>
                      <span className="text-xs text-muted-foreground">Admin</span>
                   </div>
@@ -819,10 +819,10 @@ const handleExportExcel = () => {
             <SidebarMenuItem>
               <SidebarMenuButton 
                 onClick={handleLogout} 
-                className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 justify-start group-data-[collapsible=icon]:justify-center"
+                className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 justify-start group-data-[state=collapsed]:justify-center"
               >
                 <LogOut className="h-4 w-4" />
-                <span className="group-data-[collapsible=icon]:hidden">Cerrar sesión</span>
+                <span className="group-data-[state=collapsed]:hidden">Cerrar sesión</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
