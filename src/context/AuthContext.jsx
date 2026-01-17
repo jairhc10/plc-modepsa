@@ -38,7 +38,7 @@ export const AuthProvider = ({ children }) => {
   // Verificar validez del token con el backend
   const verificarToken = async (authToken) => {
     try {
-      const response = await fetch('http://localhost:5000/api/auth/verificar', {
+      const response = await fetch('http://192.168.10.44:5000/api/auth/verificar', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${authToken}`,
