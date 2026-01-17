@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils';
 import DateRangeCalendar from '@/components/ui/calendar';
 import { reportesService } from '../../services/reportesService';
 import { FileSpreadsheet } from "lucide-react";
-import * as XLSX from "xlsx";
+
 
 
 
@@ -61,7 +61,7 @@ function DashboardInternal() {
 
 
   const [reporteHornos, setReporteHornos] = useState([]);
-  const [reporteHornosExport, setReporteHornosExport] = useState([]);
+  
   const [loadingReporte, setLoadingReporte] = useState(false);
   const [errorReporte, setErrorReporte] = useState(null);
 
@@ -172,13 +172,7 @@ function DashboardInternal() {
       ...filtrosBase,
       paginado: true,
       page: 1,
-      size: 20,
-    });
-
-    // 🔹 2. EXCEL (TODO SIN LÍMITE)
-    const excel = await reportesService.obtenerReporteHornos({
-      ...filtrosBase,
-      paginado: false,
+      size: 9,
     });
 
     if (!tabla.success) {
@@ -186,59 +180,56 @@ function DashboardInternal() {
     }
 
     setReporteHornos(tabla.data || []);
-    setReporteHornosExport(excel.data || []);
+    
 
     toast.success(`Se encontraron ${excel.total} registros`);
 
   } catch (error) {
     setErrorReporte(error.message || 'Error desconocido');
-    toast.error('Error al cargar el reporte');
+    // toast.error('Error al cargar el reporte');
   } finally {
     setLoadingReporte(false);
   }
 };
 
-const handleExportExcel = () => {
-  if (reporteHornosExport.length === 0) {
-    toast.warning("No hay datos para exportar");
+
+// Función para exportar a Excel
+const handleExportExcel = async () => {
+  if (loadingReporte) {
+    toast.warning("Espera a que termine la consulta actual");
     return;
   }
 
-  // Mapeo limpio para Excel (headers bonitos)
-  const dataExcel = reporteHornosExport.map((r) => ({
-    "Fecha Registro": r.Fecha_Registro,
-    "Número OT": r.Numero_OT,
-    "Peso Unitario": r.Peso_Unitario,
-    "Peso Total": r.Peso_Total,
-    "Fecha Fin Manual": r.Fecha_Fin_Manual,
-    "Fecha Fin Automática": r.Fecha_Fin_Auto,
-    "Modo Ingreso": r.Modo_Ingreso_Carga,
-    "Dureza 1": r.Dureza_1,
-    "Dureza 2": r.Dureza_2,
-    "Dureza 3": r.Dureza_3,
-    "Usuario": r.Usuario,
-    "Temp H1": r["TEMPERATURA HORNO1"],
-    "Temp H2": r["TEMPERATURA HORNO2"],
-    "Temp H3": r["TEMPERATURA HORNO3"],
-    "Temp H4": r["TEMPERATURA HORNO4"],
-    "Temp H5": r["TEMPERATURA HORNO5"],
-    "Temp H6": r["TEMPERATURA HORNO6"],
-    "Temp H7": r["TEMPERATURA HORNO7"],
-  }));
+  try {
+    setLoadingReporte(true);
+    
+    // Construir filtros (mismos que "Buscar Datos")
+    const filtrosBase = {
+      fecha_desde: dateRange.from
+        ? dateRange.from.toISOString().split('T')[0]
+        : null,
+      fecha_hasta: dateRange.to
+        ? dateRange.to.toISOString().split('T')[0]
+        : null,
+      numero_ot: ootFilter !== 'all' ? ootFilter : null,
+    };
 
-  const ws = XLSX.utils.json_to_sheet(dataExcel);
-  const wb = XLSX.utils.book_new();
+    // Llamar al servicio
+    const resultado = await reportesService.exportarReporteHornosExcel(filtrosBase);
 
-  XLSX.utils.book_append_sheet(wb, ws, "Reporte Hornos");
+    if (resultado.success) {
+      toast.success("Excel descargado correctamente");
+    } else {
+      toast.error(resultado.error || "Error al exportar Excel");
+    }
 
-  XLSX.writeFile(
-    wb,
-    `Reporte_Hornos_${new Date().toISOString().slice(0, 10)}.xlsx`
-  );
-
-  toast.success("Excel exportado correctamente");
+  } catch (error) {
+    toast.error("Error al exportar Excel");
+    console.error(error);
+  } finally {
+    setLoadingReporte(false);
+  }
 };
-
 
 
 
@@ -349,19 +340,17 @@ const handleExportExcel = () => {
   </label>
 
   <Button 
-    onClick={handleExportExcel}
-    disabled={reporteHornos.length === 0}
-    title={
-        reporteHornosExport.length === 0
-        ? "No hay datos para exportar"
-        : "Exportar a Excel"
-    }
-    className={cn(
-      "w-full h-10 text-sm font-medium bg-green-600 hover:bg-green-700 text-white",
-      "disabled:opacity-50 disabled:cursor-not-allowed")}>
-    <FileSpreadsheet className="h-4 w-4 mr-2" />
-    Excel
-  </Button>
+  onClick={handleExportExcel}
+  disabled={loadingReporte}
+  title="Exportar a Excel"
+  className={cn(
+    "w-full h-10 text-sm font-medium bg-green-600 hover:bg-green-700 text-white",
+    "disabled:opacity-50 disabled:cursor-not-allowed"
+  )}
+>
+  <FileSpreadsheet className="h-4 w-4 mr-2" />
+  {loadingReporte ? 'Exportando...' : 'Excel'}
+</Button>
 </div>
 </div>
 
@@ -394,16 +383,7 @@ const handleExportExcel = () => {
     </div>
   )}
 
-  {/* Error */}
-  {errorReporte && (
-    <div className="p-6 m-4 bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-lg">
-      <div className="flex items-center gap-2 text-red-800 dark:text-red-400">
-        <AlertCircle className="h-5 w-5" />
-        <p className="font-medium">Error al cargar datos:</p>
-      </div>
-      <p className="text-sm text-red-600 dark:text-red-400 mt-1">{errorReporte}</p>
-    </div>
-  )}
+  
 
   {/* Tabla solo si hay datos */}
   {/* Mensaje de sin datos */}

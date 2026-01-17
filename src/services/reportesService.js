@@ -34,4 +34,56 @@ export const reportesService = {
       throw error;
     }
   },
+
+/**
+   * Exportar reporte a Excel (descarga directa desde backend)
+   */
+   exportarReporteHornosExcel: async (filtros = {}) => {
+    try {
+      console.log('📥 Descargando Excel con filtros:', filtros);
+
+      const response = await fetch(`${API_BASE_URL}/reportes/hornos/excel`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(filtros),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al exportar Excel');
+      }
+
+      // Obtener el archivo como blob
+      const blob = await response.blob();
+      
+      // Crear URL temporal para descarga
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      
+      // Nombre del archivo con timestamp
+      const timestamp = new Date().toISOString().slice(0, 10);
+      link.download = `Reporte_Hornos_${timestamp}.xlsx`;
+      
+      // Simular click para descargar
+      document.body.appendChild(link);
+      link.click();
+      
+      // Limpiar
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      console.log('✅ Excel descargado correctamente');
+      return { success: true };
+
+    } catch (error) {
+      console.error('❌ Error al exportar Excel:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
 };
