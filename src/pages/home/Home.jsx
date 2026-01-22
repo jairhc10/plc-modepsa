@@ -1,45 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import {
-  Home as HomeIcon,
-  Settings,
-  LogOut,
-  Search,
-  Filter,
-  Download,
-  Eye,
-  Calendar as CalendarIcon,
-  Moon,
-  Sun,
-  Bell,
-  Database,
-  Cpu,
-  Activity,
-  AlertCircle,
-  User,
-  Shield,
-  FileBarChart,
-  X,
-  ChevronDown,
-  ChevronRight,
-  ChevronLeft
-} from 'lucide-react';
-
-import {
-  SidebarProvider,
-  Sidebar,
-  SidebarContent,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-  SidebarFooter,
-  SidebarInset,
-  SidebarTrigger,
-  useSidebar,
-} from '../../components/ui/sidebar';
-
+import {Home as HomeIcon,Settings,LogOut,Filter,Eye,Calendar as CalendarIcon,Moon,Sun,Bell,Database,Cpu,Activity,AlertCircle,User,Shield,FileBarChart, } from 'lucide-react';
+import {SidebarProvider,Sidebar,SidebarContent,SidebarHeader,SidebarMenu,SidebarMenuItem,SidebarMenuButton,SidebarFooter,SidebarInset,SidebarTrigger,useSidebar,} from '../../components/ui/sidebar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious, PaginationEllipsis } from '../../components/ui/pagination';
 import { Button } from '../../components/ui/button';
@@ -510,7 +473,7 @@ function DashboardInternal() {
                   <TableRow className={darkMode ? "border-gray-800 hover:bg-gray-800/50" : ""}>
                     <TableHead className="min-w-[120px]">Fecha Registro</TableHead>
                     <TableHead className="min-w-[120px]">Número OT</TableHead>
-                    <TableHead className="min-w-[110px]">Peso Unit.</TableHead>
+                    <TableHead className="min-w-[110px]">Tiempo Asig.</TableHead>
                     <TableHead className="min-w-[110px]">Peso Total</TableHead>
                     <TableHead className="min-w-[180px]">Fecha Fin Manual</TableHead>
                     <TableHead className="min-w-[180px]">Fecha Fin Auto</TableHead>
@@ -567,10 +530,10 @@ function DashboardInternal() {
                           </span>
                         </TableCell>
 
-                        {/* Peso Unitario */}
+                        {/* Tiempo asignado */}
                         <TableCell>
-                          {hasValue(registro.Peso_Unitario) ? (
-                            <span className="font-medium">{Number(registro.Peso_Unitario).toFixed(2)}</span>
+                          {hasValue(registro.Tiempo_Asignado) ? (
+                            <span className="font-medium">{Number(registro.Tiempo_Asignado).toFixed(2)}</span>
                           ) : (
                             <span className="inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-1 text-xs font-medium text-gray-500 dark:text-gray-400">
                               N/A
@@ -987,8 +950,8 @@ function DashboardInternal() {
             <div className="h-6 w-px bg-border" />
             <h1 className="text-lg font-semibold tracking-tight">
               {activeMenu === 'dashboard' && 'Dashboard General'}
-              {activeMenu === 'reports' && 'Reportes del Sistema'}
-              {activeMenu === 'reports2' && 'Reportes2'}
+              {activeMenu === 'reports' && 'Reporte de Hornos'}
+              {activeMenu === 'reports2' && 'Reporte Gerencia'}
               {activeMenu === 'settings' && 'Configuración'}
             </h1>
           </div>
